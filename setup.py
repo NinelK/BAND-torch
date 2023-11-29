@@ -8,12 +8,13 @@ with open("requirements.txt") as file:
     requirements = file.read().splitlines()
 
 setup(
-    name="lfads_torch",
-    author="Andrew Sedler",
-    author_email="arsedler9@gmail.com",
+    name="band_torch",
+    author="Nina Kudryashova",
+    author_email="kudryashova.nina@gmail.com",
     description="A PyTorch implementation of "
-    "Latent Factor Analysis via Dynamical Systems (LFADS)",
-    url="https://github.com/arsedler9/lfads-torch",
+    "Behavior aligned neural dynamics (BAND)"
+    " based on Latent Factor Analysis via Dynamical Systems (LFADS)",
+    url="https://github.com/NinelK/BAND-torch",
     install_requires=requirements,
     packages=find_packages(),
 )

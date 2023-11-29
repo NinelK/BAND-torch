@@ -1,5 +1,13 @@
-# `lfads-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
+# `BAND-torch`: Behavior-aligned neural dynamics model
 
+BAND is a latent dynamics model weakly supervised with behavior.  
+Using a well-established latent dynamics model (LFADS, black) as a baseline, we constructed a model that not only explains neural variability but also aligns the latent space with the behavioral output (green + black).
+![BAND schema](BAND_schema.pdf)
+While LFADS is capable of inferring inputs through the controller RNN, this is only the case when these inputs cause 
+a significant change in future dynamics and affect the neural reconstruction.
+To ensure that behavior-related inputs can be captured even if they cause a small, transient change in neural dynamics, we utilize an additional behavior decoder (Fig.~\ref{fig:fig1}b, green).
+
+The code in this repository is based on `lfads-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
 [![arXiv](https://img.shields.io/badge/arXiv-2309.01230-b31b1b.svg)](https://arxiv.org/abs/2309.01230)
 
 Latent factor analysis via dynamical systems (LFADS) is a variational sequential autoencoder that achieves state-of-the-art performance in denoising high-dimensional neural spiking activity for downstream applications in science and engineering [1, 2, 3, 4]. Recently introduced variants have continued to demonstrate the applicability of the architecture to a wide variety of problems in neuroscience [5, 6, 7, 8]. Since the development of the original implementation of LFADS, new technologies have emerged that use dynamic computation graphs [9], minimize boilerplate code [10], compose model configuration files [11], and simplify large-scale training [12]. Building on these modern Python libraries, we introduce `lfads-torch` &mdash; a new open-source implementation of LFADS designed to be easier to understand, configure, and extend.
@@ -7,10 +15,10 @@ Latent factor analysis via dynamical systems (LFADS) is a variational sequential
 # Installation
 To create an environment and install the dependencies of the project, run the following commands:
 ```
-git clone git@github.com:arsedler9/lfads-torch.git
-conda create --name lfads-torch python=3.9
-conda activate lfads-torch
-cd lfads-torch
+git clone https://github.com/NinelK/BAND-torch.git
+cd BAND-torch
+micromamba create --name band-torch python=3.9
+micromamba activate band-torch
 pip install -e .
 pre-commit install
 ```
