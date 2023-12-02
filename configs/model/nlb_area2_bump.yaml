@@ -1,4 +1,4 @@
-_target_: lfads_torch.model.LFADS
+_target_: lfads_torch.band_model.BAND
 
 # --------- architecture --------- #
 encod_data_dim: 49
@@ -11,7 +11,7 @@ ci_enc_dim: 80
 ci_lag: 1
 con_dim: 80
 co_dim: 4
-ic_dim: 100 # 50 in autolfads paper
+ic_dim: 100 # 50 in autoband paper
 gen_dim: 100
 fac_dim: 40
 
@@ -24,23 +24,31 @@ readout:
     - _target_: lfads_torch.modules.readin_readout.FanInLinear
       in_features: ${model.fac_dim}
       out_features: 65
+behavior_readout:
+  _target_: torch.nn.ModuleList
+  modules:
+    - _target_: lfads_torch.modules.readin_readout.FanInLinear
+      in_features: ${model.fac_dim}
+      out_features: 2
 
 # --------- augmentation --------- #
 train_aug_stack:
-  _target_: lfads_torch.modules.augmentations.AugmentationStack
+  _target_: lfads_torch.modules.band_augmentations.AugmentationStack
   transforms:
-    - _target_: lfads_torch.modules.augmentations.CoordinatedDropout
+    - _target_: lfads_torch.modules.band_augmentations.CoordinatedDropout
       cd_rate: 0.3
       cd_pass_rate: 0.0
       ic_enc_seq_len: ${model.ic_enc_seq_len}
   batch_order: [0]
   loss_order: [0]
 infer_aug_stack:
-  _target_: lfads_torch.modules.augmentations.AugmentationStack
+  _target_: lfads_torch.modules.band_augmentations.AugmentationStack
 
 # --------- priors / posteriors --------- #
 reconstruction:
   - _target_: lfads_torch.modules.recons.Poisson
+behavior_reconstruction:
+  - _target_: lfads_torch.modules.recons.MSE
 variational: True
 co_prior:
   _target_: lfads_torch.modules.priors.AutoregressiveMultivariateNormal
@@ -59,6 +67,7 @@ dropout_rate: 0.02 # sampled
 cell_clip: 5.0
 loss_scale: 1.0e+4
 recon_reduce_mean: True
+behavior_weight: 1e-4
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3
