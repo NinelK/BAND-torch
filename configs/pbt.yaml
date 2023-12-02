@@ -60,6 +60,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: False
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
+    _target_: band_torch.post_run.analysis.run_posterior_sampling
     filename: lfads_output.h5
     num_samples: 50

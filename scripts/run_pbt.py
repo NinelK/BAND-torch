@@ -7,12 +7,12 @@ from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.search.basic_variant import BasicVariantGenerator
 
-from lfads_torch.extensions.tune import (
+from band_torch.extensions.tune import (
     BinaryTournamentPBT,
     HyperParam,
     ImprovementRatioStopper,
 )
-from lfads_torch.run_model import run_model
+from band_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
 PROJECT_STR = "lfads-torch-example"

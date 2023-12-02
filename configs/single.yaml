@@ -1,6 +1,6 @@
 defaults:
-  - model: nlb_mc_maze
-  - datamodule: nlb_mc_maze
+  - model: nlb_area2_bump
+  - datamodule: nlb_area2_bump
   - callbacks: default
   - _self_
 
@@ -49,6 +49,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: True
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
-    filename: lfads_output.h5
+    _target_: band_torch.post_run.analysis.run_posterior_sampling
+    filename: band_output.h5
     num_samples: 50

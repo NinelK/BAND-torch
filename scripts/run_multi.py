@@ -7,7 +7,7 @@ from ray.tune import CLIReporter
 from ray.tune.schedulers import FIFOScheduler
 from ray.tune.suggest.basic_variant import BasicVariantGenerator
 
-from lfads_torch.run_model import run_model
+from band_torch.run_model import run_model
 
 # ---------- OPTIONS -----------
 PROJECT_STR = "lfads-torch-example"

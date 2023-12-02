@@ -1,9 +1,8 @@
 # `BAND-torch`: Behavior-aligned neural dynamics model
 
-BAND is a latent dynamics model weakly supervised with behavior.  
-Using a well-established latent dynamics model (LFADS, black) as a baseline, we constructed a model that not only explains neural variability but also aligns the latent space with the behavioral output (green + black).
-![BAND schema](BAND_schema.pdf)
-While LFADS is capable of inferring inputs through the controller RNN, this is only the case when these inputs cause 
+BAND is a latent dynamics model weakly supervised with behavior.
+Using a well-established latent dynamics model (LFADS) as a baseline, we constructed a model that not only explains neural variability but also aligns the latent space with the behavioral output ([BAND schema](BAND_schema.pdf), green is new).
+While LFADS is capable of inferring inputs through the controller RNN, this is only the case when these inputs cause
 a significant change in future dynamics and affect the neural reconstruction.
 To ensure that behavior-related inputs can be captured even if they cause a small, transient change in neural dynamics, we utilize an additional behavior decoder (Fig.~\ref{fig:fig1}b, green).
 
@@ -35,7 +34,7 @@ Note that for both training and validation data, `encod_data` may be the same as
 
 Create a new configuration file for your dataset (e.g. `configs/datamodule/my_datamodule.yaml`):
 ```
-_target_: lfads_torch.datamodules.BasicDataModule
+_target_: band_torch.datamodules.BasicDataModule
 data_paths:
   - <PATH-TO-HDF5-FILE>
 batch_size: <YOUR-BATCH-SIZE>

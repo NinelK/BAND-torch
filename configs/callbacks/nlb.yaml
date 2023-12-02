@@ -1,11 +1,11 @@
 raster_plot:
-  _target_: lfads_torch.callbacks.RasterPlot
+  _target_: band_torch.callbacks.RasterPlot
   log_every_n_epochs: 500
 
 trajectory_plot:
-  _target_: lfads_torch.callbacks.TrajectoryPlot
+  _target_: band_torch.callbacks.TrajectoryPlot
   log_every_n_epochs: 500
 
 evaluation_callback:
-  _target_: lfads_torch.extensions.nlb.NLBEvaluation
+  _target_: band_torch.extensions.nlb.NLBEvaluation
   log_every_n_epochs: 5

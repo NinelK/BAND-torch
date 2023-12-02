@@ -19,7 +19,7 @@ def run_posterior_sampling(model, datamodule, filename, num_samples=50):
 
     Parameters
     ----------
-    model : lfads_torch.model.LFADS
+    model : band_torch.model.BAND
         A trained LFADS model.
     datamodule : pytorch_lightning.LightningDataModule
         The `LightningDataModule` to pass through the `model`.
