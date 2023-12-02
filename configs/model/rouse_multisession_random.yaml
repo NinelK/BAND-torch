@@ -1,19 +1,19 @@
-_target_: band_torch.model.BAND
+_target_: lfads_torch.model.LFADS
 
 # --------- architecture --------- #
-encod_data_dim: ${model.fac_dim}
-encod_seq_len: 140
-recon_seq_len: 180
+encod_data_dim: 50
+encod_seq_len: 30
+recon_seq_len: ${model.encod_seq_len}
 ext_input_dim: 0
 ic_enc_seq_len: 0
 ic_enc_dim: 100
-ci_enc_dim: 80
+ci_enc_dim: 100
 ci_lag: 1
-con_dim: 80
-co_dim: 4
+con_dim: 100
+co_dim: 6
 ic_dim: 100
 gen_dim: 100
-fac_dim: 40
+fac_dim: 30
 
 # --------- readin / readout --------- #
 readin:
@@ -30,30 +30,31 @@ readout:
 
 # --------- augmentation --------- #
 train_aug_stack:
-  _target_: band_torch.modules.augmentations.AugmentationStack
+  _target_: lfads_torch.modules.augmentations.AugmentationStack
   transforms:
-    - _target_: band_torch.modules.augmentations.CoordinatedDropout
+    - _target_: lfads_torch.modules.augmentations.CoordinatedDropout
       cd_rate: 0.3 # sampled
       cd_pass_rate: 0.0
       ic_enc_seq_len: ${model.ic_enc_seq_len}
   batch_order: [0]
   loss_order: [0]
 infer_aug_stack:
-  _target_: band_torch.modules.augmentations.AugmentationStack
+  _target_: lfads_torch.modules.augmentations.AugmentationStack
 
 # --------- priors / posteriors --------- #
 reconstruction:
-  - _target_: band_torch.modules.recons.Poisson
-  - _target_: band_torch.modules.recons.Poisson
-  - _target_: band_torch.modules.recons.Poisson
+  _target_: lfads_torch.modules.recons.MultisessionReconstruction
+  datafile_pattern: ${datamodule.datafile_pattern}
+  recon:
+    _target_: lfads_torch.modules.recons.Poisson
 variational: True
 co_prior:
-  _target_: band_torch.modules.priors.AutoregressiveMultivariateNormal
+  _target_: lfads_torch.modules.priors.AutoregressiveMultivariateNormal
   tau: 10.0
   nvar: 0.1
   shape: ${model.co_dim}
 ic_prior:
-  _target_: band_torch.modules.priors.MultivariateNormal
+  _target_: lfads_torch.modules.priors.MultivariateNormal
   mean: 0
   variance: 0.1
   shape: ${model.ic_dim}
@@ -72,18 +73,18 @@ lr_decay: 0.95
 lr_patience: 6
 lr_adam_beta1: 0.9
 lr_adam_beta2: 0.999
-lr_adam_epsilon: 1.0e-8
+lr_adam_epsilon: 3.1623e-5
 lr_scheduler: False
 
 # --------- regularization --------- #
 weight_decay: 0.0
 l2_start_epoch: 0
-l2_increase_epoch: 80
+l2_increase_epoch: 50
 l2_ic_enc_scale: 0.0
 l2_ci_enc_scale: 0.0
 l2_gen_scale: 0.0 # sampled
 l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
-kl_increase_epoch: 80
+kl_increase_epoch: 50
 kl_ic_scale: 0.0 # sampled
 kl_co_scale: 0.0 # sampled
