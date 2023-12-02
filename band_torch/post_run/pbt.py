@@ -52,7 +52,7 @@ def plot_pbt_hps(pbt_dir, plot_field, save_dir=None, **kwargs):
     pbt_dir : str
         The path to the PBT run.
     plot_field : str
-        The HP to plot. See the HP log headers or lfads_tf2
+        The HP to plot. See the HP log headers or band_tf2
         source code for options.
     save_dir : str, optional
         The directory for saving the figure, by default None will

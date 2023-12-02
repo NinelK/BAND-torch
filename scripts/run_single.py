@@ -22,5 +22,9 @@ shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Switch to the `RUN_DIR` and train the model
 os.chdir(RUN_DIR)
 run_model(
+    overrides={
+        "datamodule": DATASET_STR,
+        "model": DATASET_STR,
+    },
     config_path="../configs/single.yaml",
 )

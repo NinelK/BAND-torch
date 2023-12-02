@@ -40,9 +40,10 @@ class BAND(pl.LightningModule):
         infer_aug_stack: augmentations.AugmentationStack,
         readin: nn.ModuleList,
         readout: nn.ModuleList,
-        beh_readout: nn.ModuleList,
+        behavior_readout: nn.ModuleList,
         loss_scale: float,
         recon_reduce_mean: bool,
+        behavior_weight: float,
         lr_scheduler: bool,
         lr_init: float,
         lr_stop: float,
@@ -65,7 +66,15 @@ class BAND(pl.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(
-            ignore=["ic_prior", "co_prior", "reconstruction", "behavior_reconstruction", "readin", "readout","behavior_readout"],
+            ignore=[
+                "ic_prior",
+                "co_prior",
+                "reconstruction",
+                "behavior_reconstruction",
+                "readin",
+                "readout",
+                "behavior_readout",
+            ],
         )
         # Store `co_prior` on `hparams` so it can be accessed in decoder
         self.hparams.co_prior = co_prior
@@ -133,7 +142,9 @@ class BAND(pl.LightningModule):
         # Convert the factors representation into output distribution parameters
         factors = torch.split(factors, batch_sizes)
         output_params = [self.readout[s](f) for s, f in zip(sessions, factors)]
-        output_behavior_params = [self.behavior_readout[s](f) for s, f in zip(sessions, factors)]
+        output_behavior_params = [
+            self.behavior_readout[s](f) for s, f in zip(sessions, factors)
+        ]
         # Separate parameters of the output distribution
         output_params = [
             self.recon[s].reshape_output_params(op)
@@ -225,15 +236,21 @@ class BAND(pl.LightningModule):
             for s in sessions
         ]
         # Compute the behavioral reconstruction loss
+        # NINA temporary fix: remove the last FP_LEN timesteps when calculating loss
         behavior_recon_all = [
-            self.beh_recon[s].compute_loss(batch[s].behavior, output[s].output_behavior_params)
+            self.beh_recon[s].compute_loss(
+                batch[s].behavior,
+                output[s].output_behavior_params[:, : batch[s].behavior.shape[1]][
+                    ..., None
+                ],
+            )
             for s in sessions
         ]
         # Apply losses processing
         recon_all = [
             aug_stack.process_losses(ra, batch[s], self.log, split)
             for ra, s in zip(recon_all, sessions)
-        ] # NINA Check what's going on here
+        ]  # NINA Check what's going on here
         # Compute bits per spike
         sess_bps, sess_co_bps, sess_fp_bps = transpose_lists(
             [
@@ -252,7 +269,9 @@ class BAND(pl.LightningModule):
         # Aggregate the heldout cost for logging
         if not hps.recon_reduce_mean:
             recon_all = [torch.sum(ra, dim=(1, 2)) for ra in recon_all]
-            behavior_recon_all = [torch.sum(ra, dim=(1, 2)) for ra in  behavior_recon_all]
+            behavior_recon_all = [
+                torch.sum(ra, dim=(1, 2)) for ra in behavior_recon_all
+            ]
         # Compute reconstruction loss for each session
         sess_recon = [ra.mean() for ra in recon_all]
         sess_behavior_recon = [ra.mean() for ra in behavior_recon_all]
@@ -272,7 +291,12 @@ class BAND(pl.LightningModule):
         l2_ramp = self._compute_ramp(hps.l2_start_epoch, hps.l2_increase_epoch)
         kl_ramp = self._compute_ramp(hps.kl_start_epoch, hps.kl_increase_epoch)
         # Compute the final loss
-        loss = hps.loss_scale * (recon + behavior_recon + l2_ramp * l2 + kl_ramp * (ic_kl + co_kl))
+        loss = hps.loss_scale * (
+            recon
+            + self.hparams.behavior_weight * behavior_recon
+            + l2_ramp * l2
+            + kl_ramp * (ic_kl + co_kl)
+        )
         # Compute the reconstruction accuracy, if applicable
         if batch[0].truth.numel() > 0:
             output_means = [
@@ -303,7 +327,7 @@ class BAND(pl.LightningModule):
         metrics = {
             f"{split}/loss": loss,
             f"{split}/recon": recon,
-            f"{split}/beh_recon": beh_recon,
+            f"{split}/beh_recon": behavior_recon,
             f"{split}/bps": max(bps, -1.0),
             f"{split}/co_bps": max(co_bps, -1.0),
             f"{split}/fp_bps": max(fp_bps, -1.0),

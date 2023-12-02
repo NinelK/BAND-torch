@@ -1,5 +1,3 @@
-from glob import glob
-
 import h5py
 import numpy as np
 import pytorch_lightning as pl
@@ -12,9 +10,9 @@ from torch.utils.data import DataLoader, Dataset
 from .tuples import SessionBatch
 
 MANDATORY_KEYS = {
-    "train": ["encod_data", "recon_data"],
-    "valid": ["encod_data", "recon_data"],
-    "test": ["encod_data"],
+    "train": ["encod_data", "recon_data", "behavior"],
+    "valid": ["encod_data", "recon_data", "behavior"],
+    "test": ["encod_data", "behavior"],
 }
 
 
@@ -33,6 +31,9 @@ def attach_tensors(datamodule, data_dicts: list[dict], extra_keys: list[str] = [
             assert all(f"{prefix}_{key}" in data_dict for key in MANDATORY_KEYS[prefix])
             # Load the encod_data
             encod_data = to_tensor(data_dict[f"{prefix}_encod_data"])
+            # Load the behavior
+            behavior = to_tensor(data_dict[f"{prefix}_behavior"])
+            print("SHAPE: ", encod_data.shape, behavior.shape)
             n_samps, n_steps, _ = encod_data.shape
             # Load the recon_data
             if f"{prefix}_recon_data" in data_dict:
@@ -69,6 +70,7 @@ def attach_tensors(datamodule, data_dicts: list[dict], extra_keys: list[str] = [
                 SessionBatch(
                     encod_data=encod_data,
                     recon_data=recon_data,
+                    behavior=behavior,
                     ext_input=ext_input,
                     truth=truth,
                     sv_mask=sv_mask,
@@ -133,7 +135,7 @@ class SessionDataset(Dataset):
 class BasicDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        datafile_pattern: str,
+        data_paths: list[str],
         batch_keys: list[str] = [],
         attr_keys: list[str] = [],
         batch_size: int = 64,
@@ -152,8 +154,7 @@ class BasicDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         hps = self.hparams
         data_dicts = []
-        data_paths = sorted(glob(hps.datafile_pattern))
-        for data_path in data_paths:
+        for data_path in hps.data_paths:
             # Load data arrays from the file
             with h5py.File(data_path, "r") as h5file:
                 data_dict = {k: v[()] for k, v in h5file.items()}

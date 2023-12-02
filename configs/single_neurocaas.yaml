@@ -2,7 +2,7 @@ seed: 0
 ignore_warnings: False
 
 model:
-  _target_: lfads_torch.models.base_model.LFADS
+  _target_: band_torch.models.base_model.BAND
   # --------- architecture --------- #
   encod_data_dim: 137
   encod_seq_len: 35
@@ -23,38 +23,38 @@ model:
   readout:
     _target_: torch.nn.ModuleList
     modules:
-      - _target_: lfads_torch.models.modules.readin_readout.FanInLinear
+      - _target_: band_torch.models.modules.readin_readout.FanInLinear
         in_features: ${model.fac_dim}
         out_features: 182
   # --------- augmentation --------- #
   train_aug_stack:
-    _target_: lfads_torch.models.modules.augmentations.AugmentationStack
+    _target_: band_torch.models.modules.augmentations.AugmentationStack
     transforms:
-      - _target_: lfads_torch.models.modules.augmentations.CoordinatedDropout
+      - _target_: band_torch.models.modules.augmentations.CoordinatedDropout
         cd_rate: 0.3
         cd_pass_rate: 0.0
         ic_enc_seq_len: ${model.ic_enc_seq_len}
     batch_order: [0]
     loss_order: [0]
   infer_aug_stack:
-    _target_: lfads_torch.models.modules.augmentations.AugmentationStack
+    _target_: band_torch.models.modules.augmentations.AugmentationStack
     transforms:
-      - _target_: lfads_torch.models.modules.augmentations.IgnoreNaNLoss
+      - _target_: band_torch.models.modules.augmentations.IgnoreNaNLoss
         encod_data_dim: ${model.encod_data_dim}
         encod_seq_len: ${model.encod_seq_len}
         scale_by_quadrant: False
     loss_order: [0]
   # --------- priors / posteriors --------- #
   reconstruction:
-    - _target_: lfads_torch.models.modules.recons.Poisson
+    - _target_: band_torch.models.modules.recons.Poisson
   variational: True
   co_prior:
-    _target_: lfads_torch.models.modules.priors.AutoregressiveMultivariateNormal
+    _target_: band_torch.models.modules.priors.AutoregressiveMultivariateNormal
     tau: 10.0
     nvar: 0.1
     shape: ${model.co_dim}
   ic_prior:
-    _target_: lfads_torch.models.modules.priors.MultivariateNormal
+    _target_: band_torch.models.modules.priors.MultivariateNormal
     mean: 0
     variance: 0.1
     shape: ${model.ic_dim}
@@ -87,7 +87,7 @@ model:
   kl_co_scale: 1.0e-7
 
 datamodule:
-  _target_: lfads_torch.datamodules.BasicDataModule
+  _target_: band_torch.datamodules.BasicDataModule
   data_paths:
     - ${relpath:datasets/mc_maze-20ms-val.h5}
   batch_keys:
@@ -127,10 +127,10 @@ callbacks:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: epoch
   raster_plot:
-    _target_: lfads_torch.callbacks.RasterPlot
+    _target_: band_torch.callbacks.RasterPlot
     log_every_n_epochs: 200
   trajectory_plot:
-    _target_: lfads_torch.callbacks.TrajectoryPlot
+    _target_: band_torch.callbacks.TrajectoryPlot
     log_every_n_epochs: 200
 
 logger:
@@ -148,6 +148,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: True
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
-    filename: lfads_output.h5
+    _target_: band_torch.post_run.analysis.run_posterior_sampling
+    filename: band_output.h5
     num_samples: 50

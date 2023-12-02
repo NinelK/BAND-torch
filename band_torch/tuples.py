@@ -5,6 +5,7 @@ SessionBatch = namedtuple(
     [
         "encod_data",
         "recon_data",
+        "behavior",
         "ext_input",
         "truth",
         "sv_mask",
@@ -15,6 +16,7 @@ SessionOutput = namedtuple(
     "SessionOutput",
     [
         "output_params",
+        "output_behavior_params",
         "factors",
         "ic_mean",
         "ic_std",

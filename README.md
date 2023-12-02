@@ -6,10 +6,10 @@ While LFADS is capable of inferring inputs through the controller RNN, this is o
 a significant change in future dynamics and affect the neural reconstruction.
 To ensure that behavior-related inputs can be captured even if they cause a small, transient change in neural dynamics, we utilize an additional behavior decoder (Fig.~\ref{fig:fig1}b, green).
 
-The code in this repository is based on `lfads-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
+The code in this repository is based on `band-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
 [![arXiv](https://img.shields.io/badge/arXiv-2309.01230-b31b1b.svg)](https://arxiv.org/abs/2309.01230)
 
-Latent factor analysis via dynamical systems (LFADS) is a variational sequential autoencoder that achieves state-of-the-art performance in denoising high-dimensional neural spiking activity for downstream applications in science and engineering [1, 2, 3, 4]. Recently introduced variants have continued to demonstrate the applicability of the architecture to a wide variety of problems in neuroscience [5, 6, 7, 8]. Since the development of the original implementation of LFADS, new technologies have emerged that use dynamic computation graphs [9], minimize boilerplate code [10], compose model configuration files [11], and simplify large-scale training [12]. Building on these modern Python libraries, we introduce `lfads-torch` &mdash; a new open-source implementation of LFADS designed to be easier to understand, configure, and extend.
+Latent factor analysis via dynamical systems (LFADS) is a variational sequential autoencoder that achieves state-of-the-art performance in denoising high-dimensional neural spiking activity for downstream applications in science and engineering [1, 2, 3, 4]. Recently introduced variants have continued to demonstrate the applicability of the architecture to a wide variety of problems in neuroscience [5, 6, 7, 8]. Since the development of the original implementation of LFADS, new technologies have emerged that use dynamic computation graphs [9], minimize boilerplate code [10], compose model configuration files [11], and simplify large-scale training [12]. Building on these modern Python libraries, we introduce `band-torch` &mdash; a new open-source implementation of LFADS designed to be easier to understand, configure, and extend.
 
 # Installation
 To create an environment and install the dependencies of the project, run the following commands:
@@ -22,9 +22,14 @@ pip install -e .
 pre-commit install
 ```
 
+# Notes on fixing problems
+
+To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this library in your env, e.g.:
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/disk/scratch2/nkudryas/micromamba/envs/band-torch/lib/`
+
 # Basic Walkthrough
 ## DataModule Configuration
-The first step in applying `lfads-torch` to your dataset is to prepare your preprocessed data files. We recommend saving your data as `n_samples x n_timesteps x n_channels` arrays in the HDF5 format using the following keys:
+The first step in applying `band-torch` to your dataset is to prepare your preprocessed data files. We recommend saving your data as `n_samples x n_timesteps x n_channels` arrays in the HDF5 format using the following keys:
 - `train_encod_data`: Data to be used as input when training the model.
 - `train_recon_data`: Data to be used as a reconstruction target when training the model.
 - `valid_encod_data`: Data to be used as input when validating the model.
@@ -40,7 +45,7 @@ data_paths:
 batch_size: <YOUR-BATCH-SIZE>
 ```
 
-We also provide preprocessed example data files from the Neural Latents Benchmark in `datasets`. With [`nlb_tools`](https://github.com/neurallatents/nlb_tools) installed in your environment, you can additionally use the `NLBEvaluation` extension to monitor NLB metrics while training `lfads-torch` models.
+We also provide preprocessed example data files from the Neural Latents Benchmark in `datasets`. With [`nlb_tools`](https://github.com/neurallatents/nlb_tools) installed in your environment, you can additionally use the `NLBEvaluation` extension to monitor NLB metrics while training `band-torch` models.
 
 ## Model Configuration
 Next, you'll need to create a model configuration file that defines the architecture of your LFADS model (e.g. `configs/model/my_model.yaml`). We recommend starting with a copy of the `configs/model/nlb_mc_maze.yaml` file. At the least, you'll need to specify the following values in this file with the parameters of your dataset:
@@ -59,21 +64,21 @@ overrides={
     "model": "my_model",
 }
 ```
-This will tell `lfads-torch` to use the custom datamodule and model configurations you just defined. Running this script in your `lfads-torch` environment should begin optimizing a single model on your GPU if it is available. Logs and checkpoints will be saved in the model directory, and model outputs will be saved in `lfads_output_sess{i}.h5` when training is complete. Feel free to inspect `configs/single.yaml` and `configs/callbacks` to experiment with different `Trainer` arguments, alternative loggers and callbacks, and more.
+This will tell `band-torch` to use the custom datamodule and model configurations you just defined. Running this script in your `band-torch` environment should begin optimizing a single model on your GPU if it is available. Logs and checkpoints will be saved in the model directory, and model outputs will be saved in `band_output_sess{i}.h5` when training is complete. Feel free to inspect `configs/single.yaml` and `configs/callbacks` to experiment with different `Trainer` arguments, alternative loggers and callbacks, and more.
 
 As a next step, try specifying a random search in `scripts/run_multi.py` or a population-based training run in `scripts/run_pbt.py` and running a large-scale sweep to identify high-performing hyperparameters for your dataset!
 
 # Advanced Usage
-`lfads-torch` is designed to be modular in order to easily adapt to a wide variety of use cases. At the core of this modularity is the use of composable configuration files via Hydra [11]. User-defined objects can be substituted anywhere in the framework by simply modifying a `_target_` key and its associated arguments. In this section, we draw attention to some of the more significant opportunities that this modularity provides.
+`band-torch` is designed to be modular in order to easily adapt to a wide variety of use cases. At the core of this modularity is the use of composable configuration files via Hydra [11]. User-defined objects can be substituted anywhere in the framework by simply modifying a `_target_` key and its associated arguments. In this section, we draw attention to some of the more significant opportunities that this modularity provides.
 
 ## Modular Reconstruction
-Reconstruction losses play a key role in enabling LFADS to model the data distribution across data modalities. In the original model, a Poisson reconstruction trains the model to infer firing rates underlying binned spike counts. In subsequent extensions of LFADS, Gamma and Zero-Inflated Gamma distributions have been used to model EMG and calcium imaging datasets [5, 6]. In `lfads-torch`, we provide implementations of Poisson, Gaussian, Gamma, and Zero-Inflated Gamma reconstruction costs and allow the user to easily define their own reconstructions. These can be easily selected using the `reconstruction` argument in the model configuration.
+Reconstruction losses play a key role in enabling LFADS to model the data distribution across data modalities. In the original model, a Poisson reconstruction trains the model to infer firing rates underlying binned spike counts. In subsequent extensions of LFADS, Gamma and Zero-Inflated Gamma distributions have been used to model EMG and calcium imaging datasets [5, 6]. In `band-torch`, we provide implementations of Poisson, Gaussian, Gamma, and Zero-Inflated Gamma reconstruction costs and allow the user to easily define their own reconstructions. These can be easily selected using the `reconstruction` argument in the model configuration.
 
 ## Modular Augmentations
-Data augmentation is a particularly effective tool for training LFADS models. In particular, augmentations that act on both the input data and the reconstruction cost gradients have endowed the model with resistance to identity overfitting (coordinated dropout [3, 4]) and the ability to infer firing rates with spatiotemporal superresolution (selective backpropagation through time [6, 7]). Other augmentations can be used to reduce the impact of correlated noise [5]. In `lfads-torch`, we provide a simple interface for applying data augmentations via the `AugmentationStack` class. At a high level, the user creates the object by passing in a list of transformations and specifying the order in which they should be applied to the data batch, the loss tensor, or both. Separate `AugmentationStack`s are applied automatically by the `LFADS` object during training and inference, making it much easier to experiment with new augmentation strategies.
+Data augmentation is a particularly effective tool for training LFADS models. In particular, augmentations that act on both the input data and the reconstruction cost gradients have endowed the model with resistance to identity overfitting (coordinated dropout [3, 4]) and the ability to infer firing rates with spatiotemporal superresolution (selective backpropagation through time [6, 7]). Other augmentations can be used to reduce the impact of correlated noise [5]. In `band-torch`, we provide a simple interface for applying data augmentations via the `AugmentationStack` class. At a high level, the user creates the object by passing in a list of transformations and specifying the order in which they should be applied to the data batch, the loss tensor, or both. Separate `AugmentationStack`s are applied automatically by the `LFADS` object during training and inference, making it much easier to experiment with new augmentation strategies.
 
 ## Modular Priors
-The LFADS model computes KL penalties between posteriors and priors for both initial condition and inferred input distributions, which are added to the reconstruction cost in the variational ELBO. In the original implementation, priors were multivariate normal and autoregressive multivariate normal for the initial condition and inferred inputs, respectively. In `lfads-torch`, the user can easily switch between priors using the `ic_prior` and `co_prior` config arguments or create custom prior modules by implementing `make_posterior` and `forward` functions. This gives users the freedom to experiment with alternative priors that may be more appropriate for certain brain areas and tasks.
+The LFADS model computes KL penalties between posteriors and priors for both initial condition and inferred input distributions, which are added to the reconstruction cost in the variational ELBO. In the original implementation, priors were multivariate normal and autoregressive multivariate normal for the initial condition and inferred inputs, respectively. In `band-torch`, the user can easily switch between priors using the `ic_prior` and `co_prior` config arguments or create custom prior modules by implementing `make_posterior` and `forward` functions. This gives users the freedom to experiment with alternative priors that may be more appropriate for certain brain areas and tasks.
 
 # References
 1. David Sussillo, Rafal Jozefowicz, LF Abbott, and Chethan Pandarinath. LFADS – Latent Factor Analysis via Dynamical Systems. arXiv preprint arXiv:1608.06315, 2016.

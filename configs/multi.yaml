@@ -68,5 +68,5 @@ posterior_sampling:
   use_best_ckpt: True
   fn:
     _target_: band_torch.post_run.analysis.run_posterior_sampling
-    filename: lfads_output.h5
+    filename: band_output.h5
     num_samples: 50

@@ -10,13 +10,13 @@ configpath=$(neurocaas-contrib workflow get-configpath)
 resultpath=$(neurocaas-contrib workflow get-resultpath-tmp)
 
 echo "--Running AutoLFADS--"
-source activate lfads-torch
-python /home/ubuntu/lfads-torch/scripts/run_pbt.py $datapath $configpath $resultpath
+source activate band-torch
+python /home/ubuntu/band-torch/scripts/run_pbt.py $datapath $configpath $resultpath
 source deactivate
 
 echo "--Writing results--"
 cd $resultpath/best_model
-zip -r autolfads.zip *
-neurocaas-contrib workflow put-result -r autolfads.zip
+zip -r autoband.zip *
+neurocaas-contrib workflow put-result -r autoband.zip
 
 source deactivate

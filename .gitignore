@@ -1,7 +1,7 @@
 test_*.yaml
 tutorials/multisession/AnimalP
 datasets/rouse_multisession
-tutorials/multisession/lfads-output
+tutorials/multisession/band-output
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

@@ -11,7 +11,7 @@ ci_enc_dim: 80
 ci_lag: 1
 con_dim: 80
 co_dim: 4
-ic_dim: 100 # 50 in autolfads paper
+ic_dim: 100 # 50 in autoband paper
 gen_dim: 100
 fac_dim: 40
 
@@ -24,6 +24,12 @@ readout:
     - _target_: band_torch.modules.readin_readout.FanInLinear
       in_features: ${model.fac_dim}
       out_features: 65
+behavior_readout:
+  _target_: torch.nn.ModuleList
+  modules:
+    - _target_: band_torch.modules.readin_readout.FanInLinear
+      in_features: ${model.fac_dim}
+      out_features: 2
 
 # --------- augmentation --------- #
 train_aug_stack:
@@ -61,6 +67,7 @@ dropout_rate: 0.02 # sampled
 cell_clip: 5.0
 loss_scale: 1.0e+4
 recon_reduce_mean: True
+behavior_weight: 1e-4
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3

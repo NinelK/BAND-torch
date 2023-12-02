@@ -6,7 +6,7 @@ LFADS with automated hyperparameter optimization.
 
 [Latent factor analysis via dynamical systems (LFADS)](https://www.nature.com/articles/s41592-018-0109-9) is a variational sequential autoencoder that achieves state-of-the-art performance in denoising high-dimensional neural spiking activity for downstream applications in science and engineering. Recently introduced variants have continued to demonstrate the applicability of the architecture to a wide variety of problems in neuroscience.
 
-Since the development of the original implementation of LFADS, new technologies have emerged that use [dynamic computation graphs](https://pytorch.org/), [minimize boilerplate code](https://www.pytorchlightning.ai/index.html), [compose model configuration files](https://hydra.cc/), and [simplify large-scale training](https://docs.ray.io/en/latest/tune/index.html). This implementation of LFADS, [`lfads-torch`](https://github.com/arsedler9/lfads-torch/tree/neurocaas), builds on these modern Python libraries and is designed to be easier to understand, configure, and extend. Note that the repo is currently private pending some internal benchmarking, but we plan to make it public soon.
+Since the development of the original implementation of LFADS, new technologies have emerged that use [dynamic computation graphs](https://pytorch.org/), [minimize boilerplate code](https://www.pytorchlightning.ai/index.html), [compose model configuration files](https://hydra.cc/), and [simplify large-scale training](https://docs.ray.io/en/latest/tune/index.html). This implementation of LFADS, [`band-torch`](https://github.com/arsedler9/band-torch/tree/neurocaas), builds on these modern Python libraries and is designed to be easier to understand, configure, and extend. Note that the repo is currently private pending some internal benchmarking, but we plan to make it public soon.
 
 Achieving state-of-the-art performance with deep neural population dynamics models requires extensive hyperparameter tuning for each dataset. [AutoLFADS](https://www.nature.com/articles/s41592-022-01675-0) is a model-tuning framework that automatically produces high-performing LFADS models on data from a variety of brain areas and tasks, without behavioral or task information. The AutoLFADS framework uses [coordinated dropout](https://arxiv.org/abs/1908.07896) to prevent identity overfitting and [population-based training](https://arxiv.org/abs/1711.09846) to efficiently tune hyperparameters over the course of a single training run.
 
@@ -14,15 +14,15 @@ Achieving state-of-the-art performance with deep neural population dynamics mode
 
 https://www.nature.com/articles/s41592-022-01675-0
 
-[TODO: Add lfads-torch preprint when available]
+[TODO: Add band-torch preprint when available]
 
 # Github Repo Link:
 
-https://github.com/arsedler9/lfads-torch/tree/neurocaas
+https://github.com/arsedler9/band-torch/tree/neurocaas
 
 # Bash Script Link:
 
-https://github.com/arsedler9/lfads-torch/blob/neurocaas/run_main.sh
+https://github.com/arsedler9/band-torch/blob/neurocaas/run_main.sh
 
 # Demo Link:
 
@@ -30,7 +30,7 @@ https://drive.google.com/drive/folders/1eOxuPsGVes_1FUemsHWQHZ_OccQuj184
 
 # How to use this analysis:
 
-NeuroCAAS runs the `neurocaas` branch of `lfads-torch`, which will be publicly available at the link above. At a high level, the pipeline takes (1) an input data file in the HDF5 format along with (2) a configuration YAML file which specifies model architecture and training hyperparameters. At the end of training, the pipeline will return a `.zip` file which contains training logs, model outputs, and the best performing model checkpoint.
+NeuroCAAS runs the `neurocaas` branch of `band-torch`, which will be publicly available at the link above. At a high level, the pipeline takes (1) an input data file in the HDF5 format along with (2) a configuration YAML file which specifies model architecture and training hyperparameters. At the end of training, the pipeline will return a `.zip` file which contains training logs, model outputs, and the best performing model checkpoint.
 
 ## Data File
 
@@ -65,15 +65,15 @@ The following hyperparameters are also frequently changed, in order of importanc
 
 ### Advanced Configuration
 
-The configuration system for `lfads-torch` is based on Hydra. [Under the hood](https://github.com/arsedler9/lfads-torch/blob/neurocaas/lfads_torch/run_model.py), the `model`, `datamodule` and `trainer` keys are recursively instantiated by passing the arguments specified to their respective `_target_` objects. For example, in order for Hydra to instantiate the `model`, it first instantiates the `readin`, `readout`, `train_aug_stack`, `infer_aug_stack`, etc. and then passes these objects into the `LFADS` constructor. This is important to understand this in order to take full advantage of the modularity of `lfads-torch`. Augmentations, priors, and reconstruction costs can all be easily swapped out in this way to develop new functionality. See [the GitHub repo](https://github.com/arsedler9/lfads-torch/blob/neurocaas) for more detail.
+The configuration system for `band-torch` is based on Hydra. [Under the hood](https://github.com/arsedler9/band-torch/blob/neurocaas/band_torch/run_model.py), the `model`, `datamodule` and `trainer` keys are recursively instantiated by passing the arguments specified to their respective `_target_` objects. For example, in order for Hydra to instantiate the `model`, it first instantiates the `readin`, `readout`, `train_aug_stack`, `infer_aug_stack`, etc. and then passes these objects into the `LFADS` constructor. This is important to understand this in order to take full advantage of the modularity of `band-torch`. Augmentations, priors, and reconstruction costs can all be easily swapped out in this way to develop new functionality. See [the GitHub repo](https://github.com/arsedler9/band-torch/blob/neurocaas) for more detail.
 
 ## Output Files
 
-A successfully completed AutoLFADS run will return an `autolfads.zip` file containing the following:
+A successfully completed AutoLFADS run will return an `autoband.zip` file containing the following:
 
 - `fitlog.csv`: A log of the many metrics reported during training. The most important metrics to pay attention to are the reconstruction losses, `train/recon` and `valid/recon`. For most established model variants, this refers to the mean negative log-likelihood. Other metrics are clearly labeled in the header of the CSV. We recommend inspection of `train/recon` and `valid/recon` to avoid common issues like underfitting and overfitting.
-- `lfads_output_sess0.h5`: A copy of the original data file, combined with the outputs of the trained model. The denoised trials can be found at `train_output_params` and `valid_output_params`, along with other intermediate latent representations.
-- `model.ckpt`: The parameters of the final trained model. When the `lfads-torch` source code is released, the entire model can be loaded for post-hoc inspection and inference by passing the path to this checkpoint into the `LFADS.load_from_checkpoint` function.
+- `band_output_sess0.h5`: A copy of the original data file, combined with the outputs of the trained model. The denoised trials can be found at `train_output_params` and `valid_output_params`, along with other intermediate latent representations.
+- `model.ckpt`: The parameters of the final trained model. When the `band-torch` source code is released, the entire model can be loaded for post-hoc inspection and inference by passing the path to this checkpoint into the `LFADS.load_from_checkpoint` function.
 
 # FAQ
 ## How should I perform the training and validation split?

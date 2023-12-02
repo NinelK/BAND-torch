@@ -17,13 +17,13 @@ fac_dim: 40
 
 # --------- readin / readout --------- #
 readin:
-  _target_: lfads_torch.modules.readin_readout.MultisessionReadin
+  _target_: band_torch.modules.readin_readout.MultisessionReadin
   datafile_pattern: ${datamodule.datafile_pattern}
   out_features: ${model.fac_dim}
   pcr_init: False
 
 readout:
-  _target_: lfads_torch.modules.readin_readout.MultisessionReadout
+  _target_: band_torch.modules.readin_readout.MultisessionReadout
   datafile_pattern: ${datamodule.datafile_pattern}
   in_features: ${model.fac_dim}
   pcr_init: False
