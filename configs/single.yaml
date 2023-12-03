@@ -1,7 +1,7 @@
 defaults:
   - model: nlb_mc_maze
   - datamodule: nlb_mc_maze
-  - callbacks: default
+  - callbacks: band
   - _self_
 
 seed: 0
@@ -10,7 +10,7 @@ ignore_warnings: False
 trainer:
   _target_: pytorch_lightning.Trainer
   gradient_clip_val: 200
-  max_epochs: 1_000
+  max_epochs: 2_000
   log_every_n_steps: 5
   # track_grad_norm: 2
 
@@ -49,6 +49,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: True
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
+    _target_: lfads_torch.post_run.band_analysis.run_posterior_sampling
     filename: lfads_output.h5
     num_samples: 50

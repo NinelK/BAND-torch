@@ -1,4 +1,4 @@
-_target_: lfads_torch.datamodules.BasicDataModule
+_target_: lfads_torch.band_datamodules.BasicDataModule
 data_paths:
   - ${relpath:datasets/area2_bump-05ms-val.h5}
 batch_keys:
