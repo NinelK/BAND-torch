@@ -33,7 +33,6 @@ def attach_tensors(datamodule, data_dicts: list[dict], extra_keys: list[str] = [
             encod_data = to_tensor(data_dict[f"{prefix}_encod_data"])
             # Load the behavior
             behavior = to_tensor(data_dict[f"{prefix}_behavior"])
-            print("SHAPE: ", encod_data.shape, behavior.shape)
             n_samps, n_steps, _ = encod_data.shape
             # Load the recon_data
             if f"{prefix}_recon_data" in data_dict:
