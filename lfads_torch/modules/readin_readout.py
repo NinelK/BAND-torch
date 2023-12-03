@@ -15,6 +15,25 @@ class FanInLinear(nn.Linear):
         nn.init.constant_(self.bias, 0.0)
 
 
+class FanInSeq2Seq(nn.Module):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        time_features: int,
+    ):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(in_features * time_features, out_features * time_features),
+            nn.Unflatten(1, (time_features, out_features)),
+        )
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x
+
+
 class _MultisessionModuleList(abc.ABC, nn.ModuleList):
     def __init__(
         self,
