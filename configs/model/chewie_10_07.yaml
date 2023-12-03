@@ -67,7 +67,7 @@ ic_post_var_min: 1.0e-4
 dropout_rate: 0.02 # sampled
 cell_clip: 5.0
 loss_scale: 1.0e+4
-recon_reduce_mean: True
+recon_reduce_mean: False
 behavior_weight: 0. #1e-4
 
 # --------- learning rate --------- #
@@ -90,5 +90,5 @@ l2_gen_scale: 0.0 # sampled
 l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
 kl_increase_epoch: 80
-kl_ic_scale: 0.0 # sampled
-kl_co_scale: 0.0 # sampled
+kl_ic_scale: 1.0 # sampled
+kl_co_scale: 1.0 # sampled
