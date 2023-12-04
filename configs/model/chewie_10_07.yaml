@@ -6,14 +6,14 @@ encod_seq_len: 101
 recon_seq_len: 101
 ext_input_dim: 0
 ic_enc_seq_len: 0
-ic_enc_dim: 100
-ci_enc_dim: 80
+ic_enc_dim: 64
+ci_enc_dim: 64
 ci_lag: 1
-con_dim: 80
-co_dim: 4
-ic_dim: 100 # 50 in autoband paper
-gen_dim: 100
-fac_dim: 40
+con_dim: 64
+co_dim: 2
+ic_dim: 64 # 50 in autoband paper
+gen_dim: 64
+fac_dim: 32
 
 # --------- readin / readout --------- #
 readin:
@@ -64,11 +64,11 @@ ic_prior:
 ic_post_var_min: 1.0e-4
 
 # --------- misc --------- #
-dropout_rate: 0.02 # sampled
+dropout_rate: 0.05 # sampled
 cell_clip: 5.0
-loss_scale: 1.0e+4
+loss_scale: 1.0
 recon_reduce_mean: False
-behavior_weight: 0. #1e-4
+behavior_weight: 0.1
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3
@@ -83,12 +83,12 @@ lr_scheduler: True
 # --------- regularization --------- #
 weight_decay: 0.0
 l2_start_epoch: 0
-l2_increase_epoch: 80
+l2_increase_epoch: 500
 l2_ic_enc_scale: 0.0
 l2_ci_enc_scale: 0.0
 l2_gen_scale: 0.0 # sampled
 l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
-kl_increase_epoch: 80
+kl_increase_epoch: 500
 kl_ic_scale: 1.0 # sampled
 kl_co_scale: 1.0 # sampled

@@ -6,9 +6,9 @@ from pathlib import Path
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS -----------
-PROJECT_STR = "band-torch-example"
+PROJECT_STR = "band-torch"
 DATASET_STR = "chewie_10_07"  # "nlb_area2_bump"
-RUN_TAG = datetime.now().strftime("%y%m%d_%H%M%S") + "_exampleSingle"
+RUN_TAG = datetime.now().strftime("%y%m%d_%H%M%S") + "_slow_start"
 RUN_DIR = Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 OVERWRITE = True
 # ------------------------------
@@ -25,6 +25,9 @@ run_model(
     overrides={
         "datamodule": DATASET_STR,
         "model": DATASET_STR,
+        "logger.wandb_logger.project": PROJECT_STR,
+        "logger.wandb_logger.tags.1": DATASET_STR,
+        "logger.wandb_logger.tags.2": RUN_TAG,
     },
     config_path="../configs/single.yaml",
 )

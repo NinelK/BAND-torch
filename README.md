@@ -31,6 +31,13 @@ To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this l
 1. yaml pre-commit does not run
 2. torch version used by LFADS is 1.13.1, while 2.1.1 is the latest
 3. attr keys and batch keys -- what is the difference? (seems like attr are trial attributes for post training analysis, while batch keys are passed to every batch)
+4. Looks like KL priors are not logged. E.g. if we swap AR for independent prior, it is not recorded afaik
+
+# Opportunities
+1. Try MultivariateStudentT prior on controls
+
+# TODOs
+Make ablations
 
 # Basic Walkthrough
 ## DataModule Configuration
