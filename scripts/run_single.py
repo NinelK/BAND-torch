@@ -6,9 +6,9 @@ from pathlib import Path
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS -----------
-PROJECT_STR = "band-torch"
+PROJECT_STR = "band-torch-kl"
 DATASET_STR = "chewie_10_07"  # "nlb_area2_bump"
-RUN_TAG = datetime.now().strftime("%y%m%d_%H%M%S") + "_slow_start"
+RUN_TAG = datetime.now().strftime("%y%m%d_%H%M%S") + "_kl"
 RUN_DIR = Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 OVERWRITE = True
 # ------------------------------

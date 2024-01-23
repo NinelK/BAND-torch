@@ -85,6 +85,8 @@ model:
   kl_increase_epoch: 80
   kl_ic_scale: 1.0e-7
   kl_co_scale: 1.0e-7
+  kl_ic_target: 0
+  kl_co_target: 0
 
 datamodule:
   _target_: lfads_torch.datamodules.BasicDataModule

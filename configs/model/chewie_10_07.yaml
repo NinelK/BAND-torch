@@ -5,7 +5,7 @@ encod_data_dim: 70
 encod_seq_len: 101
 recon_seq_len: 101
 ext_input_dim: 0
-ic_enc_seq_len: 0
+ic_enc_seq_len: 25
 ic_enc_dim: 64
 ci_enc_dim: 64
 ci_lag: 1
@@ -13,7 +13,7 @@ con_dim: 64
 co_dim: 2
 ic_dim: 64 # 50 in autoband paper
 gen_dim: 64
-fac_dim: 32
+fac_dim: 40
 
 # --------- readin / readout --------- #
 readin:
@@ -52,9 +52,11 @@ behavior_reconstruction:
   - _target_: lfads_torch.modules.recons.MSE
 variational: True
 co_prior:
-  _target_: lfads_torch.modules.priors.AutoregressiveMultivariateNormal
-  tau: 10.0
-  nvar: 0.1
+  _target_: lfads_torch.modules.priors.MultivariateNormal
+  # tau: 10.0
+  # nvar: 0.1
+  mean: 0
+  variance: 0.1
   shape: ${model.co_dim}
 ic_prior:
   _target_: lfads_torch.modules.priors.MultivariateNormal
@@ -64,11 +66,11 @@ ic_prior:
 ic_post_var_min: 1.0e-4
 
 # --------- misc --------- #
-dropout_rate: 0.05 # sampled
+dropout_rate: 0.1 # sampled
 cell_clip: 5.0
 loss_scale: 1.0
 recon_reduce_mean: False
-behavior_weight: 0.1
+behavior_weight: 0.
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3
@@ -83,12 +85,14 @@ lr_scheduler: True
 # --------- regularization --------- #
 weight_decay: 0.0
 l2_start_epoch: 0
-l2_increase_epoch: 500
+l2_increase_epoch: 80
 l2_ic_enc_scale: 0.0
 l2_ci_enc_scale: 0.0
 l2_gen_scale: 0.0 # sampled
 l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
-kl_increase_epoch: 500
-kl_ic_scale: 1.0 # sampled
-kl_co_scale: 1.0 # sampled
+kl_increase_epoch: 80
+kl_ic_scale: 1e3 # sampled
+kl_co_scale: 1e3 # sampled
+kl_ic_target: 5.
+kl_co_target: 1.
