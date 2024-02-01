@@ -50,7 +50,7 @@ bin_size_ms = 10
 best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-torch-kl/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = '240130_161659_kl'
+model_name = '240131_131859_band_4f_kl1_slower'
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
@@ -107,6 +107,20 @@ with h5py.File(data_path) as f:
     train_ic = f['train_gen_init'][:]
 
 # Run behavior prediction
+# train Ridge regression to predict behavior from factors (0lag)
+X_train = train_factors.reshape(-1,train_factors.shape[-1])
+Y_train = true_train_beh.reshape(-1,true_train_beh.shape[-1])
+X_test = factors.reshape(-1,factors.shape[-1])
+ridge = Ridge(alpha=1).fit(X_train, Y_train)
+Y_pred_0lag = ridge.predict(X_test).reshape(true_valid_beh.shape)
+
+# Ridge from controls (0lag)
+X_train = train_controls.reshape(-1,train_controls.shape[-1])
+Y_train = true_train_beh.reshape(-1,true_train_beh.shape[-1])
+X_test = controls.reshape(-1,controls.shape[-1])
+ridge = Ridge(alpha=1).fit(X_train, Y_train)
+Y_pred_control_0lag = ridge.predict(X_test).reshape(true_valid_beh.shape)
+
 # Ridge seq2seq
 X_train = train_factors.reshape(train_factors.shape[0],-1)
 Y_train = true_train_beh.reshape(true_train_beh.shape[0],-1)
@@ -158,7 +172,7 @@ fig.savefig(f"{model_dest}/initial_conditions.png")
 # Plot 3: plot factors / controls / behavior prediction for 1 example trial
 
 trial_id = 13
-fig, ax = plt.subplots(2,2, figsize=(8,4),sharex=True)
+fig, ax = plt.subplots(2,3, figsize=(12,4),sharex=True)
 ax[0,0].plot(factors[trial_id] - factors[trial_id].mean(0))
 ax[1,0].plot(controls[trial_id])
 ax[0,0].set_title('factors')
@@ -166,12 +180,19 @@ ax[1,0].set_title('controls')
 
 c = ['C0','C1']
 for i in range(2):
-    ax[0,1].plot(Y_pred_seq2seq[trial_id][:,i],c=c[i])
+    ax[0,1].plot(Y_pred_0lag[trial_id][:,i],c=c[i])
     ax[0,1].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
-    ax[1,1].plot(Y_pred_control[trial_id][:,i],c=c[i])
+    ax[1,1].plot(Y_pred_control_0lag[trial_id][:,i],c=c[i])
     ax[1,1].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
-ax[0,1].set_title(f'seq2seq from factors (R2 = {R2(Y_pred_seq2seq,true_valid_beh):.1f}%)')
-ax[1,1].set_title(f'seq2seq from controls (R2 = {R2(Y_pred_control,true_valid_beh):.1f}%)')
+
+    ax[0,2].plot(Y_pred_seq2seq[trial_id][:,i],c=c[i])
+    ax[0,2].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
+    ax[1,2].plot(Y_pred_control[trial_id][:,i],c=c[i])
+    ax[1,2].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
+ax[0,1].set_title(f'0lag from factors (R2 = {R2(Y_pred_0lag,true_valid_beh):.1f}%)')
+ax[1,1].set_title(f'0lag from controls (R2 = {R2(Y_pred_control_0lag,true_valid_beh):.1f}%)')
+ax[0,2].set_title(f'seq2seq from factors (R2 = {R2(Y_pred_seq2seq,true_valid_beh):.1f}%)')
+ax[1,2].set_title(f'seq2seq from controls (R2 = {R2(Y_pred_control,true_valid_beh):.1f}%)')
 fig.tight_layout()
 
 fig.savefig(f"{model_dest}/factors_controls_behavior.png")
