@@ -27,7 +27,7 @@ def get_target_ids(true_target_direction):
     true_label = np.array([np.where(uniq_dirs==t)[0][0] for t in true_target_direction])
     return true_label
 
-def plot_avg_traj(data,true_target_direction,title=''):
+def plot_avg_traj(data,true_target_direction,title='',epoch_mask=True):
     ''' plot average trajectory for each target direction '''
     true_label = get_target_ids(true_target_direction)
     n = data.shape[-1]
@@ -36,7 +36,7 @@ def plot_avg_traj(data,true_target_direction,title=''):
     ax = ax.flatten()
     for i in range(n):
         for j in np.unique(true_label):
-            ax[i].plot(data[true_label==j].mean(0)[...,i],label=f'{true_target_direction[true_label==j][0]:.2f}')
+            ax[i].plot(data[(true_label==j) & epoch_mask].mean(0)[...,i],label=f'{true_target_direction[true_label==j][0]:.2f}')
         ax[i].set_title(f'{title} {i}')
         if i==(col-1):
             ax[i].legend(loc = (1.01,0))
@@ -44,13 +44,13 @@ def plot_avg_traj(data,true_target_direction,title=''):
     return fig
 
 dataset_name = 'chewie_10_07'
+bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
-bin_size_ms = 10
 best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-torch-kl/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = '240201_134408_kl'
+model_name = '240201_134408_band_40f_kl1_student'
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
@@ -84,14 +84,13 @@ with h5py.File(dataset_filename, 'r') as f:
     train_data = f['train_recon_data'][:]
     valid_data = f['valid_recon_data'][:]
     train_inds, valid_inds = f["train_inds"][:], f["valid_inds"][:]
+    valid_epoch = f["valid_epoch"][:]
     true_train_beh = f['train_vel'][:]
     true_valid_beh = f['valid_vel'][:]
     true_target_direction = f['valid_target_direction'][:]
 
 # load model components
 data_path = best_model_dest + model_name + '/lfads_output_sess0.h5'
-bin_width_sec = 0.01 # chewie
-# Data is binned at 10 ms
 with h5py.File(data_path) as f:
     # print(f.keys())
     # Merge train and valid data for factors and rates
@@ -106,6 +105,13 @@ with h5py.File(data_path) as f:
     train_controls = f['train_gen_inputs'][:]
     train_ic = f['train_gen_init'][:]
 
+# load ablated model components
+data_path = best_model_dest + model_name + '/lfads_ablated_output_sess0.h5'
+with h5py.File(data_path) as f:
+    noci_factors = f["valid_factors"][:]
+    noci_behavior = f["valid_output_behavior_params"][:]
+    # noci_controls = f['valid_gen_inputs'][:]
+    
 # Run behavior prediction
 # train Ridge regression to predict behavior from factors (0lag)
 X_train = train_factors.reshape(-1,train_factors.shape[-1])
@@ -113,6 +119,7 @@ Y_train = true_train_beh.reshape(-1,true_train_beh.shape[-1])
 X_test = factors.reshape(-1,factors.shape[-1])
 ridge = Ridge(alpha=1).fit(X_train, Y_train)
 Y_pred_0lag = ridge.predict(X_test).reshape(true_valid_beh.shape)
+Y_pred_noci_0lag = ridge.predict(noci_factors.reshape(-1,noci_factors.shape[-1])).reshape(true_valid_beh.shape)
 
 # Ridge from controls (0lag)
 X_train = train_controls.reshape(-1,train_controls.shape[-1])
@@ -127,6 +134,7 @@ Y_train = true_train_beh.reshape(true_train_beh.shape[0],-1)
 X_test = factors.reshape(factors.shape[0],-1)
 ridge = Ridge(alpha=1).fit(X_train, Y_train)
 Y_pred_seq2seq = ridge.predict(X_test).reshape(true_valid_beh.shape)
+Y_pred_noci_seq2seq = ridge.predict(noci_factors.reshape(noci_factors.shape[0],-1)).reshape(true_valid_beh.shape)
 
 # Ridge from control inputs (seq2seq)
 X_train = train_controls.reshape(train_controls.shape[0],-1)
@@ -172,33 +180,55 @@ fig.savefig(f"{model_dest}/initial_conditions.png")
 # Plot 3: plot factors / controls / behavior prediction for 1 example trial
 
 trial_id = 13
-fig, ax = plt.subplots(2,3, figsize=(12,4),sharex=True)
+fig, ax = plt.subplots(3,4, figsize=(15,6),sharex=True)
 ax[0,0].plot(factors[trial_id] - factors[trial_id].mean(0))
 ax[1,0].plot(controls[trial_id])
+ax[2,0].plot(noci_factors[trial_id])
 ax[0,0].set_title('factors')
 ax[1,0].set_title('controls')
 
 c = ['C0','C1']
 for i in range(2):
     ax[0,1].plot(Y_pred_0lag[trial_id][:,i],c=c[i])
-    ax[0,1].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
     ax[1,1].plot(Y_pred_control_0lag[trial_id][:,i],c=c[i])
-    ax[1,1].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
+    ax[2,1].plot(Y_pred_noci_0lag[trial_id][:,i],c=c[i])
 
     ax[0,2].plot(Y_pred_seq2seq[trial_id][:,i],c=c[i])
-    ax[0,2].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
     ax[1,2].plot(Y_pred_control[trial_id][:,i],c=c[i])
-    ax[1,2].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
+    ax[2,2].plot(Y_pred_noci_seq2seq[trial_id][:,i],c=c[i])
+    
+    ax[0,3].plot(behavior[trial_id][:,i],c=c[i])
+    ax[2,3].plot(noci_behavior[trial_id][:,i],c=c[i])
+    
+    for j in range(ax.shape[0]):
+        for k in range(1,ax.shape[1]):
+            ax[j,k].plot(true_valid_beh[trial_id][:,i],c=c[i],linestyle='--')
+
 ax[0,1].set_title(f'0lag from factors (R2 = {R2(Y_pred_0lag,true_valid_beh):.1f}%)')
 ax[1,1].set_title(f'0lag from controls (R2 = {R2(Y_pred_control_0lag,true_valid_beh):.1f}%)')
+ax[2,1].set_title(f'0lag from factors no CI (R2 = {R2(Y_pred_noci_0lag,true_valid_beh):.1f}%)')
 ax[0,2].set_title(f'seq2seq from factors (R2 = {R2(Y_pred_seq2seq,true_valid_beh):.1f}%)')
 ax[1,2].set_title(f'seq2seq from controls (R2 = {R2(Y_pred_control,true_valid_beh):.1f}%)')
+ax[2,2].set_title(f'seq2seq from factors no CI (R2 = {R2(Y_pred_noci_seq2seq,true_valid_beh):.1f}%)')
+
+ax[0,3].set_title(f'band behavior (R2 = {R2(behavior,true_valid_beh):.1f}%)')
+ax[2,3].set_title(f'band behavior no CI (R2 = {R2(noci_behavior,true_valid_beh):.1f}%)')
 fig.tight_layout()
 
 fig.savefig(f"{model_dest}/factors_controls_behavior.png")
 
 # Plot 4: plot avg factors and controls per condition (BL / AD / WO)
+for epoch, epoch_name in enumerate(['BL','AD','WO']):
+    fig = plot_avg_traj(factors,true_target_direction,title='factor',epoch_mask=(valid_epoch == epoch))
+    fig.savefig(f"{model_dest}/avg_factors_{epoch_name}.png")
+    fig = plot_avg_traj(noci_factors,true_target_direction,title='factor with no CI',epoch_mask=(valid_epoch == epoch))
+    fig.savefig(f"{model_dest}/avg_noci_factors_{epoch_name}.png")
+    fig = plot_avg_traj(controls,true_target_direction,title='control',epoch_mask=(valid_epoch == epoch))
+    fig.savefig(f"{model_dest}/avg_controls_{epoch_name}.png")
+
 fig = plot_avg_traj(factors,true_target_direction,title='factor')
 fig.savefig(f"{model_dest}/avg_factors.png")
+fig = plot_avg_traj(noci_factors,true_target_direction,title='factor with no CI')
+fig.savefig(f"{model_dest}/avg_noci_factors.png")
 fig = plot_avg_traj(controls,true_target_direction,title='control')
 fig.savefig(f"{model_dest}/avg_controls.png")
