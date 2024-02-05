@@ -50,7 +50,7 @@ bin_size_ms = 10
 best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-torch-kl/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = '240131_131859_band_4f_kl1_slower'
+model_name = '240201_134408_kl'
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
