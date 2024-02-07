@@ -31,19 +31,13 @@ To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this l
 
 1. Switched recon_reduce_mean=False  (True by default). This means that when calculating neural reconstruction, LFADS takes the sum over log_likelihoods over time and neurons. Correct me if I'm wrong, but we are supposed to be treating all data points and neurons as independent observable variables, so the total log-likelihood should be a sum (not mean).
 2. Switched loss_scale=1.0 (10^4 by default). No need for it anymore, because log_likelihood is 4 orders of magnitude bigger.
-3. After these 2 steps KL beta = 1 should actually mean KL beta = 1
+3. After these 2 steps KL beta = 1 should actually mean KL beta = 1. Not that for the controller, the term is average over timepoints, while it should be sum over timepoints.
 
 # Concerns
 1. yaml pre-commit does not run
 2. torch version used by LFADS is 1.13.1, while 2.1.1 is the latest
 3. attr keys and batch keys -- what is the difference? (seems like attr are trial attributes for post training analysis, while batch keys are passed to every batch)
 4. Looks like KL priors are not logged. E.g. if we swap AR for independent prior, it is not recorded afaik
-
-# Opportunities
-1. Try MultivariateStudentT prior on controls
-
-# TODOs
-Make ablations
 
 # Basic Walkthrough
 ## DataModule Configuration
