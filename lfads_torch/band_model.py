@@ -63,6 +63,8 @@ class BAND(pl.LightningModule):
         kl_increase_epoch: int,
         kl_ic_scale: float,
         kl_co_scale: float,
+        kl_ic_target: float,
+        kl_co_target: float,
     ):
         super().__init__()
         self.save_hyperparameters(
@@ -285,8 +287,10 @@ class BAND(pl.LightningModule):
         co_means = torch.cat([output[s].co_means for s in sessions])
         co_stds = torch.cat([output[s].co_stds for s in sessions])
         # Compute the KL penalty on posteriors
-        ic_kl = self.ic_prior(ic_mean, ic_std) * self.hparams.kl_ic_scale
-        co_kl = self.co_prior(co_means, co_stds) * self.hparams.kl_co_scale
+        ic_kl = self.ic_prior(ic_mean, ic_std)
+        co_kl = self.co_prior(co_means, co_stds)
+        ic_kl_scaled = torch.abs(ic_kl - self.hparams.kl_ic_target) * self.hparams.kl_ic_scale
+        co_kl_scaled = torch.abs(co_kl - self.hparams.kl_co_target) * self.hparams.kl_co_scale
         # Compute ramping coefficients
         l2_ramp = self._compute_ramp(hps.l2_start_epoch, hps.l2_increase_epoch)
         kl_ramp = self._compute_ramp(hps.kl_start_epoch, hps.kl_increase_epoch)
@@ -295,7 +299,7 @@ class BAND(pl.LightningModule):
             recon
             + self.hparams.behavior_weight * behavior_recon
             + l2_ramp * l2
-            + kl_ramp * (ic_kl + co_kl)
+            + kl_ramp * (ic_kl_scaled + co_kl_scaled)
         )
         # Compute the reconstruction accuracy, if applicable
         if batch[0].truth.numel() > 0:

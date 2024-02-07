@@ -1,0 +1,11 @@
+_target_: lfads_torch.band_datamodules.BasicDataModule
+data_paths:
+  - ${relpath:datasets/Jango_20140820_WB_004_neural_5ms_cvs1.h5}
+batch_keys:
+  - behavior
+attr_keys:
+  - train_inds
+  - valid_inds
+  - train_target_direction
+  - valid_target_direction
+batch_size: 64
