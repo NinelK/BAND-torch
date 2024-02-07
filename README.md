@@ -31,7 +31,7 @@ To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this l
 
 1. Switched recon_reduce_mean=False  (True by default). This means that when calculating neural reconstruction, LFADS takes the sum over log_likelihoods over time and neurons. Correct me if I'm wrong, but we are supposed to be treating all data points and neurons as independent observable variables, so the total log-likelihood should be a sum (not mean).
 2. Switched loss_scale=1.0 (10^4 by default). No need for it anymore, because log_likelihood is 4 orders of magnitude bigger.
-3. After these 2 steps KL beta = 1 should actually mean KL beta = 1. Not that for the controller, the term is average over timepoints, while it should be sum over timepoints.
+3. After these 2 steps KL beta = 1 should actually mean KL beta = 1. Note that for the controller, the term is average over timepoints, while it should be sum over timepoints.
 
 # Concerns
 1. yaml pre-commit does not run
