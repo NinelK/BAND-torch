@@ -43,6 +43,78 @@ def plot_avg_traj(data,true_target_direction,title='',epoch_mask=True):
     fig.tight_layout()
     return fig
 
+def get_trials2plot(pos, pred_pos, dir_index, epoch):
+    trials2plot = np.zeros_like(epoch)
+    for e in np.unique(epoch):
+        for d in np.unique(dir_index):
+            mask = (epoch == 1) & (dir_index == d)
+            # print(mask)
+            dist = ((pos - pred_pos) ** 2).sum(-1).sum(-1)
+            dist[~mask] = -np.inf
+            # print(dist)
+            idx_max = np.argmax(dist)
+            # print(idx_max)
+            trials2plot[idx_max] = 1
+    return trials2plot
+
+def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
+    pos = np.cumsum(vel * 0.01, 1)
+    pred_pos = np.cumsum(pred_vel * 0.01, 1)
+
+    fig = plt.figure(figsize=(6, 3))
+
+    axes = [
+        fig.add_axes([0, 0, 0.5, 1])
+    ]
+
+    ax_vel = [
+        [fig.add_axes([0.50, 0.1 * i, 0.25, 0.1]) for i in range(8)],
+        [fig.add_axes([0.75, 0.1 * i, 0.25, 0.1]) for i in range(8)],
+    ]
+
+    time = np.arange(pos.shape[1]) * 10
+
+    for p, v, ls in zip([pos, pred_pos], [vel, pred_vel], [":", "solid"]):
+        for t in range(0, pos.shape[0]):
+            # ls = ':' if epoch[t]==0 else 'solid'
+            if trials2plot[t]:
+                axes[0].plot(
+                    p[t, :, 0],
+                    p[t, :, 1],
+                    color=f"C{dir_index[t]}",
+                    alpha=1,
+                    ls=ls,
+                )
+                d = dir_index[t]
+                for i in range(2):
+                    ax_vel[i][d].plot(
+                        time,
+                        v[t, :, i],
+                        color=f"C{d}",
+                        alpha=1,
+                        ls=ls,
+                    )
+
+    for ax in axes:
+        ax.axis("off")
+
+    for ax in ax_vel:
+        for a in ax:
+            a.axis("off")
+
+    R2_iso_pos = 1 - np.sum((pos - pred_pos) ** 2) / np.sum((pos - pos.mean()) ** 2)
+    R2_iso_vel = 1 - np.sum((vel - pred_vel) ** 2) / np.sum((vel - vel.mean()) ** 2)
+    # R2_aniso_vel = np.mean(
+    #     1
+    #     - (((vel - pred_vel) ** 2).sum(0).sum(0))
+    #     / (((vel - vel.mean(0).mean(0)) ** 2).sum(0).sum(0))
+    # )
+    # print('R2 (iso/aniso):',R2_iso_vel, R2_aniso_vel)
+    axes[0].text(np.min(pos[...,0]),np.max(pos[...,1]),f'R2_pos = {R2_iso_pos*100:.2f}%')
+    ax_vel[0][-1].set_title(f'R2_vel = {R2_iso_vel*100:.2f}%')
+
+    plt.savefig(file_name)
+
 dataset_name = 'chewie_10_07'
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
@@ -50,7 +122,7 @@ PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-torch-kl/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = '240201_134408_band_40f_kl1_student'
+model_name = '240214_132434_band_40f_kl1_student_bs128'
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
@@ -232,3 +304,16 @@ fig = plot_avg_traj(noci_factors,true_target_direction,title='factor with no CI'
 fig.savefig(f"{model_dest}/avg_noci_factors.png")
 fig = plot_avg_traj(controls,true_target_direction,title='control')
 fig.savefig(f"{model_dest}/avg_controls.png")
+
+
+# Plot 5. Plot behavior prediction
+dir_index = np.array([sorted(set(true_target_direction)).index(i) for i in true_target_direction])
+avg_vel = np.empty_like(true_valid_beh)
+for d in range(np.max(dir_index) + 1):
+    mask = d == dir_index
+    avg_vel[mask] = true_valid_beh[mask].mean(0)
+trials2plot = get_trials2plot(true_valid_beh, avg_vel, dir_index, valid_epoch) # trials with max distance from avg vel
+plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction.png")
+plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction.svg")
+plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci.png")
+plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci.svg")

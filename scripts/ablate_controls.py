@@ -1,4 +1,3 @@
-from lfads_torch.post_run.band_analysis import run_posterior_sampling
 import torch
 from hydra.utils import instantiate
 from pathlib import Path
@@ -6,6 +5,7 @@ import hydra
 import os
 
 from lfads_torch.utils import flatten
+from lfads_torch.post_run.band_analysis import run_posterior_sampling
 
 from omegaconf import OmegaConf
 
@@ -20,7 +20,7 @@ PATH = parent_path + '/datasets'
 
 best_model_dest = f"{parent_path}/runs/band-torch-kl/{dataset_name}"
 
-model_name = '240201_134408_band_40f_kl1_student'
+model_name = '240214_132434_band_40f_kl1_student_bs128'
 model_dest = f"{best_model_dest}/{model_name}"
 
 overrides={
