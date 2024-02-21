@@ -1,7 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pyaldata
 import h5py
+import os
 
 raw_data_dir = (
     "/disk/scratch2/nkudryas/motor_cortex/perich_2018_binned/"
@@ -221,6 +221,23 @@ for experiment in experiments:
             h5file.create_dataset('valid_vel', data=valid_behaviours)
             h5file.create_dataset('train_target_direction', data=train_target_direction)
             h5file.create_dataset('valid_target_direction', data=valid_target_direction)
+
+        short_dataset_name = spike_data_dir[:-4]
+
+         # check if results file is there
+        results_path = f'./results/{short_dataset_name}.h5'
+        if not os.path.exists(results_path):
+            with h5py.File(results_path, 'w') as f:               
+                f.create_dataset('train_behavior', data=train_behaviours[:,:])
+                f.create_dataset('valid_behavior', data=valid_behaviours[:,:])
+                f.create_dataset('train_target_direction', data=train_target_direction)
+                f.create_dataset('valid_target_direction', data=valid_target_direction)
+                f.create_dataset('train_epoch', data=train_epoch)
+                f.create_dataset('valid_epoch', data=valid_epoch)
+                f.create_dataset('train_inds', data=train_trial)
+                f.create_dataset('valid_inds', data=valid_trial)
+
+           
 
 # save summary
 with open("./results/dataset_summary.csv", "w") as f:

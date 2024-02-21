@@ -137,3 +137,13 @@ dmypy.json
 .pyre/
 
 *.h5
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.tif
+*.tiff
+*.bmp
+*.svg
+*.eps
