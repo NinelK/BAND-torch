@@ -17,18 +17,18 @@ OmegaConf.register_new_resolver(
 )
 
 dataset_name = sys.argv[1]
-datamodule_name = sys.argv[2]
 PATH = parent_path + '/datasets'
 
 best_model_dest = f"{parent_path}/runs/band-paper/{dataset_name}"
 
-model_name = sys.argv[3]
+model_name = sys.argv[2]
 model_dest = f"{best_model_dest}/{model_name}"
 
 overrides={
-        "datamodule": datamodule_name,
-        "model": dataset_name,
-        "model.encod_data_dim": sys.argv[4],
+        "datamodule": dataset_name,
+        "model": dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model.encod_data_dim": sys.argv[3],
+        "model.behavior_weight": sys.argv[4],
     }
 config_path="../configs/single.yaml"
 print(config_path)

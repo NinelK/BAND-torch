@@ -1,7 +1,7 @@
 _target_: lfads_torch.band_model.BAND
 
 # --------- architecture --------- #
-encod_data_dim: 70
+encod_data_dim: 207
 encod_seq_len: 101
 recon_seq_len: 101
 ext_input_dim: 0
@@ -10,10 +10,10 @@ ic_enc_dim: 64
 ci_enc_dim: 64
 ci_lag: 1
 con_dim: 64
-co_dim: 2
+co_dim: 4
 ic_dim: 64 # 50 in autoband paper
-gen_dim: 64
-fac_dim: 40
+gen_dim: 200
+fac_dim: 100
 
 # --------- readin / readout --------- #
 readin:
@@ -23,7 +23,7 @@ readout:
   modules:
     - _target_: lfads_torch.modules.readin_readout.FanInLinear
       in_features: ${model.fac_dim}
-      out_features: 70
+      out_features: ${model.encod_data_dim}
 behavior_readout:
   _target_: torch.nn.ModuleList
   modules:
@@ -73,7 +73,7 @@ dropout_rate: 0.1 # sampled
 cell_clip: 5.0
 loss_scale: 1.0
 recon_reduce_mean: False
-behavior_weight: 0.1
+behavior_weight: 0.
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3
@@ -96,7 +96,7 @@ l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
 kl_increase_epoch: 500
 kl_ic_scale: 1. # sampled
-kl_co_scale: 101. # sampled
+kl_co_scale: 101.0 # sampled
 kl_ic_target: 0.
 kl_co_target: 0.
 

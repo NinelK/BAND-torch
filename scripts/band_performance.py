@@ -19,6 +19,17 @@ import sys
 
 from lfads_torch.utils import flatten
 
+name_translation = {
+    'chewie_09_15': 'Chewie_CO_FF_2016-09-15',
+    'chewie_09_21': 'Chewie_CO_FF_2016-09-21',
+    'chewie_10_05': 'Chewie_CO_FF_2016-10-05',
+    'chewie_10_07': 'Chewie_CO_FF_2016-10-07',
+    'mihili_02_03': 'Mihili_CO_FF_2014-02-03',
+    'mihili_02_17': 'Mihili_CO_FF_2014-02-17',
+    'mihili_02_18': 'Mihili_CO_FF_2014-02-18',
+    'mihili_03_07': 'Mihili_CO_FF_2014-03-07',
+}
+
 def R2(pred_beh,true_beh):
     return (1 - np.sum((pred_beh - true_beh)**2) / np.sum((true_beh - np.mean(true_beh))**2)) * 100
 
@@ -112,21 +123,21 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
     plt.savefig(file_name)
 
 dataset_name = sys.argv[1] #'chewie_10_07'
-datamodule_name = sys.argv[2] 
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
 best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = sys.argv[3]
+model_name = sys.argv[2]
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
 overrides={
-        "datamodule": datamodule_name,
-        "model": dataset_name,
-        "model.encod_data_dim": sys.argv[4],
+        "datamodule": dataset_name,
+        "model": dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model.encod_data_dim": sys.argv[3],
+        "model.behavior_weight": sys.argv[4],
     }
 config_path="../configs/single.yaml"
 
@@ -168,6 +179,7 @@ with h5py.File(data_path) as f:
     train_inds, valid_inds = f["train_inds"][:], f["valid_inds"][:]
     factors = f["valid_factors"][:]
     rates = f["valid_output_params"][:] / bin_width_sec
+    train_behavior = f["train_output_behavior_params"][:]
     behavior = f["valid_output_behavior_params"][:]
     controls = f['valid_gen_inputs'][:]
     ic = f['valid_gen_init'][:]
@@ -204,6 +216,7 @@ X_train = train_factors.reshape(train_factors.shape[0],-1)
 Y_train = true_train_beh.reshape(true_train_beh.shape[0],-1)
 X_test = factors.reshape(factors.shape[0],-1)
 ridge = Ridge(alpha=1).fit(X_train, Y_train)
+Y_pred_seq2seq_train = ridge.predict(X_train).reshape(true_train_beh.shape)
 Y_pred_seq2seq = ridge.predict(X_test).reshape(true_valid_beh.shape)
 Y_pred_noci_seq2seq = ridge.predict(noci_factors.reshape(noci_factors.shape[0],-1)).reshape(true_valid_beh.shape)
 
@@ -213,6 +226,36 @@ Y_train = true_train_beh.reshape(true_train_beh.shape[0],-1)
 X_test = controls.reshape(controls.shape[0],-1)
 ridge = Ridge(alpha=1).fit(X_train, Y_train)
 Y_pred_control = ridge.predict(X_test).reshape(true_valid_beh.shape)
+
+# save results in the summary file
+def save_results(f,area,mn,train_outputs, test_outputs):
+    if f'train_{area}_{mn}_pred' in f:
+        del f[f'train_{area}_{mn}_pred']
+    if f'test_{area}_{mn}_pred' in f:
+        del f[f'test_{area}_{mn}_pred']
+    f.create_dataset(f'train_{area}_{mn}_pred', data=train_outputs)
+    f.create_dataset(f'test_{area}_{mn}_pred', data=test_outputs)
+
+short_dataset_name = dataset_name.replace('_M1', '').replace('_PMd','')
+if 'M1' in dataset_name:
+    area = 'M1'
+elif 'PMd' in dataset_name:
+    area = 'PMd'
+else:
+    area = 'all'
+if 'lfads' in model_name:
+    train_outputs = Y_pred_seq2seq_train
+    test_outputs = Y_pred_seq2seq
+    mn = 'lfads'
+elif 'band' in model_name:
+    train_outputs = train_behavior
+    test_outputs = behavior
+    mn = 'band'
+else:
+    raise ValueError(f'Unknown model name {model_name}')
+results_path = f'./results/{name_translation[short_dataset_name]}.h5'
+with h5py.File(results_path, 'a') as f:
+    save_results(f,area,mn,train_outputs, test_outputs)
 
 # Plot 1: plot behavior weight matrices
 seq_len = config.model.recon_seq_len

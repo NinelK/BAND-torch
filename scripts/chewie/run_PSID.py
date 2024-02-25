@@ -1,7 +1,7 @@
 import numpy as np
 import h5py
 from tqdm import tqdm
-import PSID
+import PSID # v.1.1.0, before IPSID
 
 n_factors = 40
 n_beh_factors = 20
@@ -73,7 +73,7 @@ for short_dataset_name in tqdm(experiments):
         
         # mask = data['train_epoch'][:] == 1 # train on the AD epoch only
         model = PSID.PSID(
-            [d for d in data["train_recon_data"]], [d for d in data["train_behavior"]], 
+            [d for d in train_data], [d for d in train_behavior], 
             n_factors, n_beh_factors, 10
         )
 
@@ -90,7 +90,7 @@ for short_dataset_name in tqdm(experiments):
         # save predictions
         results_path = f'./results/{short_dataset_name}.h5'
         with h5py.File(results_path, 'a') as f:
-            save_results(f,area,train_outputs.cpu().detach().numpy(), test_outputs.cpu().detach().numpy())
+            save_results(f,area,train_outputs, test_outputs)
 
 # save summary
 with open("./results/PSID_decoder_R2.csv", "w") as f:
