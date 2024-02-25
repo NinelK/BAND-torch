@@ -26,6 +26,8 @@ def save_results(f,train_outputs, test_outputs):
 summary_dict = {}   
 for short_dataset_name in tqdm(experiments):
 
+    print(short_dataset_name)
+
     summary_dict[short_dataset_name] = {}
 
     # area = 'PMd'

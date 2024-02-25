@@ -1,7 +1,7 @@
 from omegaconf import OmegaConf
 
 OmegaConf.register_new_resolver(
-    "relpath", lambda p: str(Path('/disk/scratch2/nkudryas/BAND-torch/scripts/').parent / ".." / p)
+    "relpath", lambda p: str(Path('/disk/scratch2/nkudryas/BAND-torch/scripts/').parent / p)
 ) # this is required for hydra to find the config files
 
 import matplotlib.pyplot as plt
@@ -15,6 +15,7 @@ import torch
 from hydra.utils import instantiate
 from pathlib import Path
 import hydra
+import sys
 
 from lfads_torch.utils import flatten
 
@@ -104,31 +105,28 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
 
     R2_iso_pos = 1 - np.sum((pos - pred_pos) ** 2) / np.sum((pos - pos.mean()) ** 2)
     R2_iso_vel = 1 - np.sum((vel - pred_vel) ** 2) / np.sum((vel - vel.mean()) ** 2)
-    # R2_aniso_vel = np.mean(
-    #     1
-    #     - (((vel - pred_vel) ** 2).sum(0).sum(0))
-    #     / (((vel - vel.mean(0).mean(0)) ** 2).sum(0).sum(0))
-    # )
-    # print('R2 (iso/aniso):',R2_iso_vel, R2_aniso_vel)
+    
     axes[0].text(np.min(pos[...,0]),np.max(pos[...,1]),f'R2_pos = {R2_iso_pos*100:.2f}%')
     ax_vel[0][-1].set_title(f'R2_vel = {R2_iso_vel*100:.2f}%')
 
     plt.savefig(file_name)
 
-dataset_name = 'chewie_10_07'
+dataset_name = sys.argv[1] #'chewie_10_07'
+datamodule_name = sys.argv[2] 
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-torch-kl/{dataset_name}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = '240214_132434_band_40f_kl1_student_bs128'
+model_name = sys.argv[3]
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
 overrides={
-        "datamodule": dataset_name,
-        "model": dataset_name
+        "datamodule": datamodule_name,
+        "model": dataset_name,
+        "model.encod_data_dim": sys.argv[4],
     }
 config_path="../configs/single.yaml"
 
@@ -150,7 +148,8 @@ ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 # load the dataset
-dataset_filename = '/disk/scratch2/nkudryas/BAND-torch/datasets/Chewie_CO_FF_2016-10-07_session_vel_M1_spikes_go.h5'
+assert len(config.datamodule.data_paths) == 1, 'Assumed a single dataset, got more'
+dataset_filename = config.datamodule.data_paths[0] 
 
 with h5py.File(dataset_filename, 'r') as f:
     train_data = f['train_recon_data'][:]

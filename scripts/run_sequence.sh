@@ -1,0 +1,15 @@
+python scripts/run_single.py chewie_10_05_lfads chewie_10_05_M1 lfads_100f_kl1_studentT_bs256 81
+python scripts/ablate_controls.py chewie_10_05_lfads chewie_10_05_M1 lfads_100f_kl1_studentT_bs256 81
+python scripts/band_performance.py chewie_10_05_lfads chewie_10_05_M1 lfads_100f_kl1_studentT_bs256 81
+
+python scripts/run_single.py chewie_10_05_band chewie_10_05_M1 band_100f_kl1_studentT_bs256 81
+python scripts/ablate_controls.py chewie_10_05_band chewie_10_05_M1 band_100f_kl1_studentT_bs256 81
+python scripts/band_performance.py chewie_10_05_band chewie_10_05_M1 band_100f_kl1_studentT_bs256 81
+
+python scripts/run_single.py chewie_10_05_lfads chewie_10_05_PMd lfads_100f_kl1_studentT_bs256 163
+python scripts/ablate_controls.py chewie_10_05_lfads chewie_10_05_PMd lfads_100f_kl1_studentT_bs256 163
+python scripts/band_performance.py chewie_10_05_lfads chewie_10_05_PMd lfads_100f_kl1_studentT_bs256 163
+
+python scripts/run_single.py chewie_10_05_band chewie_10_05_PMd band_100f_kl1_studentT_bs256 163
+python scripts/ablate_controls.py chewie_10_05_band chewie_10_05_PMd band_100f_kl1_studentT_bs256 163
+python scripts/band_performance.py chewie_10_05_band chewie_10_05_PMd band_100f_kl1_studentT_bs256 163

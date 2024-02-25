@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from lfads_torch.benchmark.biRNN_decoder import Decoder, r2_score
 
-num_epochs = 1000
+num_epochs = 1000 # 1000 is enough
 batch_size = 100
 
 experiments = [
@@ -38,21 +38,19 @@ for short_dataset_name in tqdm(experiments):
         dataset_name = f'{short_dataset_name}_session_vel_{area}_spikes_go'
         loadpath = f'/disk/scratch2/nkudryas/BAND-torch/datasets/{dataset_name}.h5'
 
-        h5file = h5py.File(loadpath, 'r')
+        with h5py.File(loadpath, 'r') as h5file:
 
-        train_data=h5file['train_recon_data'][()].astype(np.float32)
-        valid_data=h5file['valid_recon_data'][()].astype(np.float32)
-        train_behavior=h5file['train_behavior'][()].astype(np.float32)
-        valid_behavior=h5file['valid_behavior'][()].astype(np.float32)
-        train_epoch=h5file['train_epoch'][()].astype(np.float32)
-        valid_epoch=h5file['valid_epoch'][()].astype(np.float32)
-        train_inds=h5file['train_inds'][()].astype(np.float32)
-        valid_inds=h5file['valid_inds'][()].astype(np.float32)
+            train_data=h5file['train_recon_data'][()].astype(np.float32)
+            valid_data=h5file['valid_recon_data'][()].astype(np.float32)
+            train_behavior=h5file['train_behavior'][()].astype(np.float32)
+            valid_behavior=h5file['valid_behavior'][()].astype(np.float32)
+            train_epoch=h5file['train_epoch'][()].astype(np.float32)
+            valid_epoch=h5file['valid_epoch'][()].astype(np.float32)
+            train_inds=h5file['train_inds'][()].astype(np.float32)
+            valid_inds=h5file['valid_inds'][()].astype(np.float32)
 
-        train_target_direction=h5file['train_target_direction'][()].astype(np.float32)
-        valid_target_direction=h5file['valid_target_direction'][()].astype(np.float32)
-        # print(h5file.keys())
-        h5file.close()      
+            train_target_direction=h5file['train_target_direction'][()].astype(np.float32)
+            valid_target_direction=h5file['valid_target_direction'][()].astype(np.float32)
             
         # train an RNN decoder to predict behavior from neural activity
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -113,11 +111,11 @@ for short_dataset_name in tqdm(experiments):
                 print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {train_cost.item():.4f}, Test Loss: {test_cost.item():.4f}, R2: {r2_score(test_behaviors, test_outputs).item():.4f}')
                        
         final_r2 = r2_score(test_behaviors, test_outputs).item()
-        summary_dict[short_dataset_name][f"{area}_R2_all"] = 100*final_r2 
+        summary_dict[short_dataset_name][f"{area}_R2_all"] = np.round(100*final_r2,1) 
 
         for e, epoch_name in enumerate(['BL','AD','WO']):
             final_r2 = r2_score(test_behaviors[valid_epoch==e], test_outputs[valid_epoch==e]).item()
-            summary_dict[short_dataset_name][f"{area}_R2_{epoch_name}"] = 100*final_r2       
+            summary_dict[short_dataset_name][f"{area}_R2_{epoch_name}"] = np.round(100*final_r2,1)       
 
         # save predictions
         results_path = f'./results/{short_dataset_name}.h5'
