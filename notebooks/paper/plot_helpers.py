@@ -27,16 +27,46 @@ def get_trials2plot(pos, avg_pos, dir_index, epochs,epoch=1):
         The trials to plot
     '''
     trials2plot = np.zeros_like(epochs)
-    for e in np.unique(epochs):
-        for d in np.unique(dir_index):
-            mask = (epochs == epoch) & (dir_index == d)
-            # print(mask)
-            dist = ((pos - avg_pos) ** 2).sum(-1).sum(-1)
-            dist[~mask] = -np.inf
-            # print(dist)
-            idx_max = np.argmax(dist)
-            # print(idx_max)
-            trials2plot[idx_max] = 1
+    for d in np.unique(dir_index):
+        mask = (epochs == epoch) & (dir_index == d)
+        # print(mask)
+        dist = ((pos - avg_pos) ** 2).sum(-1).sum(-1)
+        dist[~mask] = -np.inf
+        # print(dist)
+        idx_max = np.argmax(dist)
+        # print(idx_max)
+        trials2plot[idx_max] = 1
+    return trials2plot
+
+def get_random_trials2plot(dir_index, epochs,epoch=1):
+    '''
+    Select random trials to plot
+
+    Parameters
+    ----------
+    pos : np.ndarray
+        The position in single trials
+    avg_pos : np.ndarray
+        The average position
+    dir_index : np.ndarray
+        The direction index
+    epochs : np.ndarray
+        The epochs
+    epoch : int, optional
+        The epoch to consider, by default 1 (adaptation)
+
+    Returns
+    -------
+    np.ndarray
+        The trials to plot
+    '''
+    trials2plot = np.zeros_like(epochs)
+    for d in np.unique(dir_index):
+        mask = (epochs == epoch) & (dir_index == d)
+        ids_trials = np.where(mask)[0]
+        idx = np.random.choice(ids_trials)
+        # print(idx)
+        trials2plot[idx] = 1
     return trials2plot
 
 def plot_directions(
