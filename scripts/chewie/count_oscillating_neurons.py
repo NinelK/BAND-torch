@@ -1,8 +1,5 @@
-import os
 import numpy as np
-import matplotlib.pyplot as plt
 import pyaldata
-import h5py
 
 from numpy.fft import fft, fftfreq
 
@@ -23,7 +20,17 @@ raw_data_dir = (
 )
 data_save_dir = "./datasets/"
 
-for spike_data_dir in experiments:
+def spike_2_fr(spike_data, dt=0.01):
+    FR = np.zeros_like(spike_data,dtype='float')
+    kernel = np.exp(-np.linspace(-3,3,18)**2)
+    kernel /= np.sum(kernel)
+    for t in range(spike_data.shape[0]):
+        for n in range(spike_data.shape[2]):
+            spikes = spike_data[t,:,n]
+            FR[t,:,n] = np.convolve(spikes, kernel, mode='same') * (1/dt)
+    return FR
+
+for spike_data_dir in experiments[:]:
 
     results = {}
 
@@ -51,7 +58,7 @@ for spike_data_dir in experiments:
     before_align_point : time to keep before alignment point (in bins, 10ms assumed)
     """
     start_key = "idx_go_cue" #'idx_peak_speed' # 
-    before_align_point = 100 
+    before_align_point = 20 
 
     """
     dataset_type : keep all epochs? session is all epochs, can also do BLAD (only baseline and adaptation trials)
@@ -67,6 +74,13 @@ for spike_data_dir in experiments:
     dt : time step size - this actually depends on the bin window but I cant find where this is set - it is 10ms rn
     """
     dt = 0.01
+
+    """
+    n_cv : number of cross validations to do
+    n_shuffles : number of shuffles to do
+    """
+    n_cv = 500
+    n_shuffles = 500
 
     # Fourier
 
@@ -140,22 +154,19 @@ for spike_data_dir in experiments:
             ]
         )
 
-    # useful for plotting
-    time_ticks = np.arange(spike_data.shape[1])[::25]
-    sort_trials = np.arange(len(target_on))
-
     # SHUFFLE spikes
-    power5_shuffled = []
-    for _ in range(100):
+    power4_shuffled, power5_shuffled = [], []
+    power4_BL_shuffled, power5_BL_shuffled = [], []
+    for _ in range(n_shuffles):
         shuffled_spikes = np.zeros_like(spike_data)
         for t in range(spike_data.shape[0]):
             for n in range(spike_data.shape[2]):
                 shuffled_spikes[t,:,n] = np.random.permutation(spike_data[t,:,n])
 
-        fr = shuffled_spikes[AD_start:WO_start, time_window_start:] # get data for AD trials, time point 80 onwards
+        fr = spike_2_fr(shuffled_spikes[:AD_start]) # get data for BL trials
         T = dt * fr.shape[1]
 
-        power5 = []
+        power4_BL, power5_BL = [], []
         for i in range(fr.shape[-1]): # for each neuron
             x = fr[:, :, i] # get the AD spike data for neuron i
 
@@ -164,51 +175,125 @@ for spike_data_dir in experiments:
             Sxx = np.nanmean(Sxx, axis=0)  # trial average per epoch
 
             df = 1 / T  # Determine frequency resolution
-            fNQ = 1 / dt / 2  # Determine Nyquist frequency
             faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
-            j = np.argmin(np.abs(faxis - 5))
-            power5.append(Sxx.real[j]/(Sxx.real[j-1]+Sxx.real[j+1])) # power at 5Hz
+            j5 = np.argmin(np.abs(faxis - 5))
+            power5_BL.append(Sxx.real[j5]) # power at 5Hz
+            j4 = np.argmin(np.abs(faxis - 4))
+            power4_BL.append(Sxx.real[j4])
+
+        power5_BL_shuffled.append(power5_BL)
+        power4_BL_shuffled.append(power4_BL)
+
+        fr = spike_2_fr(shuffled_spikes[AD_start:WO_start]) # get data for AD trials
+        T = dt * fr.shape[1]
+
+        power4, power5 = [], []
+        for i in range(fr.shape[-1]): # for each neuron
+            x = fr[:, :, i] # get the AD spike data for neuron i
+
+            xf = fft(x)  # Compute Fourier transform of x
+            Sxx = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+            Sxx = np.nanmean(Sxx, axis=0)  # trial average per epoch
+
+            df = 1 / T  # Determine frequency resolution
+            faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
+
+            j5 = np.argmin(np.abs(faxis - 5))
+            power5.append(Sxx.real[j5]) # power at 5Hz
+            j4 = np.argmin(np.abs(faxis - 4))
+            power4.append(Sxx.real[j4])
 
         power5_shuffled.append(power5)
+        power4_shuffled.append(power4)
+
     power5_shuffled = np.asarray(power5_shuffled)
+    power4_shuffled = np.asarray(power4_shuffled)
+
+    power5_BL_shuffled = np.asarray(power5_BL_shuffled)
+    power4_BL_shuffled = np.asarray(power4_BL_shuffled)
 
     # Find 5Hz mode
-    fr = spike_data[AD_start:WO_start, time_window_start:] # get data for AD trials, time point 80 onwards
+    fr_BL = spike_2_fr(spike_data[:AD_start]) # get data for BL trials
+    fr = spike_2_fr(spike_data[AD_start:WO_start]) # get data for AD trials
     T = dt * fr.shape[1]
 
     results = []
+    results_weak = []
     for i in range(fr.shape[-1]): # for each neuron
-        # if i==0:
+        
+        x = fr_BL[:, :, i] # get the AD spike data for neuron i
+
+        xf = fft(x)  # Compute Fourier transform of x
+        Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+
+        power5_cv, power4_cv = [], []
+        for cv in range(n_cv):
+            idxs = np.random.choice(np.arange(Sxx_all.shape[0]),int(0.8*Sxx_all.shape[0]),replace=False)
+            Sxx = np.nanmean(Sxx_all[idxs], axis=0)  # trial average per epoch
+
+            df = 1 / T  # Determine frequency resolution
+            faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
+
+            j5 = np.argmin(np.abs(faxis - 5))
+            power5_cv.append(Sxx.real[j5])
+            j4 = np.argmin(np.abs(faxis - 4))
+            power4_cv.append(Sxx.real[j4])
+
+
+        power5_BL = np.mean(power5_cv) # power at 5Hz
+        power4_BL = np.mean(power4_cv)
+
         x = fr[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
         Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
 
-        power5_cv = []
-        for cv in range(10):
+        power5_cv, power4_cv = [], []
+        for cv in range(n_cv):
             idxs = np.random.choice(np.arange(Sxx_all.shape[0]),int(0.8*Sxx_all.shape[0]),replace=False)
             Sxx = np.nanmean(Sxx_all[idxs], axis=0)  # trial average per epoch
 
             df = 1 / T  # Determine frequency resolution
-            fNQ = 1 / dt / 2  # Determine Nyquist frequency
             faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
-            j = np.argmin(np.abs(faxis - 5))
-            power5_cv.append(Sxx.real[j]/(Sxx.real[j-1]+Sxx.real[j+1]))
+            j5 = np.argmin(np.abs(faxis - 5))
+            power5_cv.append(Sxx.real[j5])
+            j4 = np.argmin(np.abs(faxis - 4))
+            power4_cv.append(Sxx.real[j4])
 
         power5 = np.mean(power5_cv) # power at 5Hz
+        power4 = np.mean(power4_cv)
 
-        thr = power5_shuffled[:,i].mean() + 2 * power5_shuffled[:,i].std()
-        if power5>=thr:
-            results.append(i)
+        thr5_BL = power5_BL_shuffled[:,i].mean() + 4 * power5_BL_shuffled[:,i].std()
+        thr5 = power5_shuffled[:,i].mean() + 4 * power5_shuffled[:,i].std()
+        thr4 = power4_shuffled[:,i].mean() + 4 * power4_shuffled[:,i].std()
+        thr4_BL = power4_BL_shuffled[:,i].mean() + 4 * power4_BL_shuffled[:,i].std()
+        if (power4>=thr4) & (power4_BL<thr4_BL):
+            results.append((faxis[j4],i))
+        if (power5>=thr5) & (power5_BL<thr5_BL):
+            results.append((faxis[j5],i))
+        if (power4>=thr4):
+            results_weak.append((faxis[j4],i))
+        if (power5>=thr5):
+            results_weak.append((faxis[j5],i))
+        
 
     results = np.array(results)
+    results_weak = np.array(results_weak)
     # save summary
     with open(f"./results/spiking_{spike_data_dir.split('.mat')[0]}.csv", "w") as f:
         m1 = pd_data['M1_spikes'][0].shape[1]
         f.write(f"M1 neurons: {m1}\n")
-        for r in results:
-            f.write(f"{r},\t")
-        f.write("\n")
-        f.write(f"{np.sum(results<=m1)},\t{np.sum(results>m1)}")
+        if len(results) > 0:
+            for r in results:
+                f.write(f"{r[0]:.1f} Hz: {int(r[1]):d},\t")
+            f.write("\n")
+            U = np.unique(results[...,1])
+            f.write(f"{np.sum(U<=m1)},\t{np.sum(U>m1)}")
+            f.write("\n")
+            for r in results_weak:
+                f.write(f"{r[0]:.1f} Hz: {int(r[1]):d},\t")
+            f.write("\n")
+            U = np.unique(results_weak[...,1])
+            f.write(f"{np.sum(U<=m1)},\t{np.sum(U>m1)}")
