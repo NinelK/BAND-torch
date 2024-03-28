@@ -187,6 +187,34 @@ for experiment in experiments:
             [etype(d["epoch"]) for i, d in valid_df.iterrows()]
         )
 
+        # exclude bad trials
+        train_trials_to_exclude = np.unique(np.where(np.abs(train_behaviours) > 100)[0])
+        valid_trials_to_exclude = np.unique(np.where(np.abs(valid_behaviours) > 100)[0])
+        train_trial_mask = np.arange(train_pos.shape[0])
+        valid_trial_mask = np.arange(valid_pos.shape[0])
+        train_trial_mask = np.delete(train_trial_mask,train_trials_to_exclude)
+        valid_trial_mask = np.delete(valid_trial_mask,valid_trials_to_exclude)
+        print('Exclude trials with bad velocity: ',train_trials_to_exclude,valid_trials_to_exclude)
+
+        # vel = np.concatenate([train_behaviours,valid_behaviours],axis=0)
+        # pos = np.concatenate([train_pos,valid_pos],axis=0)
+        # target_direction = np.concatenate([train_target_direction,valid_target_direction],axis=0)
+        # # 1st those that have unrealistically high jumps in velocity
+        # trials_to_exclude = np.unique(np.where(np.abs(vel) > 50)[0])
+        # print('Exclude trials with bad velocity: ',trials_to_exclude)
+        # # 2nd those that reach to a wrong target
+        # end_points = pos[:,-1,:]
+        # target_end_points = np.zeros_like(end_points)
+        # for d in np.unique(target_direction):
+        #     target_end_points[target_direction==d] = end_points[target_direction==d].mean(0)
+        # te = np.where(np.linalg.norm(end_points - target_end_points,axis=-1) > 5)[0]
+        # print('Exclude trials reaching to a wrong target: ',te)
+        # trials_to_exclude = np.concatenate([trials_to_exclude,te])        
+        # train_trial_mask = np.arange(train_pos.shape[0])
+        # valid_trial_mask = np.arange(valid_pos.shape[0])
+        # train_trial_mask = np.delete(train_trial_mask,trials_to_exclude[trials_to_exclude < train_pos.shape[0]])
+        # valid_trial_mask = np.delete(valid_trial_mask,trials_to_exclude[trials_to_exclude >= train_pos.shape[0]])-train_pos.shape[0])
+
         data_dir = (
             data_save_dir
             + spike_data_dir[:-4]
@@ -204,23 +232,23 @@ for experiment in experiments:
 
         with h5py.File(filename, 'w') as h5file:
             # variables needed for training
-            h5file.create_dataset('train_encod_data', data=train_data)
-            h5file.create_dataset('valid_encod_data', data=valid_data)
-            h5file.create_dataset('train_recon_data', data=train_data)
-            h5file.create_dataset('valid_recon_data', data=valid_data)
-            h5file.create_dataset('train_behavior', data=train_behaviours[:,:])
-            h5file.create_dataset('valid_behavior', data=valid_behaviours[:,:])
+            h5file.create_dataset('train_encod_data', data=train_data[train_trial_mask])
+            h5file.create_dataset('valid_encod_data', data=valid_data[valid_trial_mask])
+            h5file.create_dataset('train_recon_data', data=train_data[train_trial_mask])
+            h5file.create_dataset('valid_recon_data', data=valid_data[valid_trial_mask])
+            h5file.create_dataset('train_behavior', data=train_behaviours[train_trial_mask])
+            h5file.create_dataset('valid_behavior', data=valid_behaviours[valid_trial_mask])
             # variables needed for post analysis
-            h5file.create_dataset('train_inds', data=train_trial)
-            h5file.create_dataset('valid_inds', data=valid_trial)
-            h5file.create_dataset('train_epoch', data=train_epoch)
-            h5file.create_dataset('valid_epoch', data=valid_epoch)
-            h5file.create_dataset('train_pos', data=train_pos)
-            h5file.create_dataset('valid_pos', data=valid_pos)
-            h5file.create_dataset('train_vel', data=train_behaviours)
-            h5file.create_dataset('valid_vel', data=valid_behaviours)
-            h5file.create_dataset('train_target_direction', data=train_target_direction)
-            h5file.create_dataset('valid_target_direction', data=valid_target_direction)
+            h5file.create_dataset('train_inds', data=train_trial[train_trial_mask])
+            h5file.create_dataset('valid_inds', data=valid_trial[valid_trial_mask])
+            h5file.create_dataset('train_epoch', data=train_epoch[train_trial_mask])
+            h5file.create_dataset('valid_epoch', data=valid_epoch[valid_trial_mask])
+            h5file.create_dataset('train_pos', data=train_pos[train_trial_mask])
+            h5file.create_dataset('valid_pos', data=valid_pos[valid_trial_mask])
+            h5file.create_dataset('train_vel', data=train_behaviours[train_trial_mask])
+            h5file.create_dataset('valid_vel', data=valid_behaviours[valid_trial_mask])
+            h5file.create_dataset('train_target_direction', data=train_target_direction[train_trial_mask])
+            h5file.create_dataset('valid_target_direction', data=valid_target_direction[valid_trial_mask])
 
         short_dataset_name = spike_data_dir[:-4]
 
@@ -228,14 +256,14 @@ for experiment in experiments:
         results_path = f'./results/{short_dataset_name}.h5'
         if not os.path.exists(results_path):
             with h5py.File(results_path, 'w') as f:               
-                f.create_dataset('train_behavior', data=train_behaviours[:,:])
-                f.create_dataset('valid_behavior', data=valid_behaviours[:,:])
-                f.create_dataset('train_target_direction', data=train_target_direction)
-                f.create_dataset('valid_target_direction', data=valid_target_direction)
-                f.create_dataset('train_epoch', data=train_epoch)
-                f.create_dataset('valid_epoch', data=valid_epoch)
-                f.create_dataset('train_inds', data=train_trial)
-                f.create_dataset('valid_inds', data=valid_trial)
+                f.create_dataset('train_behavior', data=train_behaviours[train_trial_mask])
+                f.create_dataset('valid_behavior', data=valid_behaviours[valid_trial_mask])
+                f.create_dataset('train_target_direction', data=train_target_direction[train_trial_mask])
+                f.create_dataset('valid_target_direction', data=valid_target_direction[valid_trial_mask])
+                f.create_dataset('train_epoch', data=train_epoch[train_trial_mask])
+                f.create_dataset('valid_epoch', data=valid_epoch[valid_trial_mask])
+                f.create_dataset('train_inds', data=train_trial[train_trial_mask])
+                f.create_dataset('valid_inds', data=valid_trial[valid_trial_mask])
 
            
 
