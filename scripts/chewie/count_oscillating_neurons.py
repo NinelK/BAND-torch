@@ -76,11 +76,9 @@ for spike_data_dir in experiments[:]:
     dt = 0.01
 
     """
-    n_cv : number of cross validations to do
     n_shuffles : number of shuffles to do
     """
-    n_cv = 500
-    n_shuffles = 500
+    n_shuffles = 100
 
     # Fourier
 
@@ -220,6 +218,7 @@ for spike_data_dir in experiments[:]:
 
     results = []
     results_weak = []
+    oscillating_score = np.zeros((2,2,fr.shape[-1]))
     for i in range(fr.shape[-1]): # for each neuron
         
         x = fr_BL[:, :, i] # get the AD spike data for neuron i
@@ -227,43 +226,30 @@ for spike_data_dir in experiments[:]:
         xf = fft(x)  # Compute Fourier transform of x
         Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
 
-        power5_cv, power4_cv = [], []
-        for cv in range(n_cv):
-            idxs = np.random.choice(np.arange(Sxx_all.shape[0]),int(0.8*Sxx_all.shape[0]),replace=False)
-            Sxx = np.nanmean(Sxx_all[idxs], axis=0)  # trial average per epoch
+        Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 
-            df = 1 / T  # Determine frequency resolution
-            faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
+        df = 1 / T  # Determine frequency resolution
+        faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
-            j5 = np.argmin(np.abs(faxis - 5))
-            power5_cv.append(Sxx.real[j5])
-            j4 = np.argmin(np.abs(faxis - 4))
-            power4_cv.append(Sxx.real[j4])
-
-
-        power5_BL = np.mean(power5_cv) # power at 5Hz
-        power4_BL = np.mean(power4_cv)
+        j5 = np.argmin(np.abs(faxis - 5))
+        power5_BL = Sxx.real[j5]
+        j4 = np.argmin(np.abs(faxis - 4))
+        power4_BL = Sxx.real[j4]
 
         x = fr[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
         Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
 
-        power5_cv, power4_cv = [], []
-        for cv in range(n_cv):
-            idxs = np.random.choice(np.arange(Sxx_all.shape[0]),int(0.8*Sxx_all.shape[0]),replace=False)
-            Sxx = np.nanmean(Sxx_all[idxs], axis=0)  # trial average per epoch
+        Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 
-            df = 1 / T  # Determine frequency resolution
-            faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
+        df = 1 / T  # Determine frequency resolution
+        faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
-            j5 = np.argmin(np.abs(faxis - 5))
-            power5_cv.append(Sxx.real[j5])
-            j4 = np.argmin(np.abs(faxis - 4))
-            power4_cv.append(Sxx.real[j4])
-
-        power5 = np.mean(power5_cv) # power at 5Hz
-        power4 = np.mean(power4_cv)
+        j5 = np.argmin(np.abs(faxis - 5))
+        power5 = Sxx.real[j5]
+        j4 = np.argmin(np.abs(faxis - 4))
+        power4 = Sxx.real[j4]
 
         thr5_BL = power5_BL_shuffled[:,i].mean() + 4 * power5_BL_shuffled[:,i].std()
         thr5 = power5_shuffled[:,i].mean() + 4 * power5_shuffled[:,i].std()
@@ -273,10 +259,19 @@ for spike_data_dir in experiments[:]:
             results.append((faxis[j4],i))
         if (power5>=thr5) & (power5_BL<thr5_BL):
             results.append((faxis[j5],i))
-        if (power4>=thr4):
+        thr5_BL = power5_BL_shuffled[:,i].mean() + 2 * power5_BL_shuffled[:,i].std()
+        thr5 = power5_shuffled[:,i].mean() + 2 * power5_shuffled[:,i].std()
+        thr4 = power4_shuffled[:,i].mean() + 2 * power4_shuffled[:,i].std()
+        thr4_BL = power4_BL_shuffled[:,i].mean() + 2 * power4_BL_shuffled[:,i].std()
+        if (power4>=thr4) & (power4_BL<thr4_BL):
             results_weak.append((faxis[j4],i))
-        if (power5>=thr5):
+        if (power5>=thr5) & (power5_BL<thr5_BL):
             results_weak.append((faxis[j5],i))
+
+        oscillating_score[0,0,i] = (power5 - power5_shuffled[:,i].mean()) / power5_shuffled[:,i].std()
+        oscillating_score[0,1,i] = (power4 - power4_shuffled[:,i].mean()) / power4_shuffled[:,i].std()
+        oscillating_score[1,0,i] = (power5_BL - power5_BL_shuffled[:,i].mean()) / power5_BL_shuffled[:,i].std()
+        oscillating_score[1,1,i] = (power4_BL - power4_BL_shuffled[:,i].mean()) / power4_BL_shuffled[:,i].std()
         
 
     results = np.array(results)
@@ -297,3 +292,5 @@ for spike_data_dir in experiments[:]:
             f.write("\n")
             U = np.unique(results_weak[...,1])
             f.write(f"{np.sum(U<=m1)},\t{np.sum(U>m1)}")
+
+    np.save(f"./results/oscillating_score_{spike_data_dir.split('.mat')[0]}.npy", oscillating_score)
