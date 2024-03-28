@@ -64,9 +64,10 @@ def get_random_trials2plot(dir_index, epochs,epoch=1):
     for d in np.unique(dir_index):
         mask = (epochs == epoch) & (dir_index == d)
         ids_trials = np.where(mask)[0]
-        idx = np.random.choice(ids_trials)
-        # print(idx)
-        trials2plot[idx] = 1
+        if len(ids_trials) != 0:
+            idx = np.random.choice(ids_trials)
+            # print(idx)
+            trials2plot[idx] = 1
     return trials2plot
 
 def plot_directions(
