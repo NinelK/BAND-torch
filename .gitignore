@@ -137,6 +137,10 @@ dmypy.json
 .pyre/
 
 *.h5
+*.csv
+*.npy
+*.pkl
+
 *.png
 *.jpg
 *.jpeg

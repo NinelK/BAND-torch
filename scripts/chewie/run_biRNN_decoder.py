@@ -58,12 +58,18 @@ for short_dataset_name in tqdm(experiments):
         N, M = train_data.shape[-1], train_behavior.shape[-1] # number of neurons, number of behavior dimensions
         T = train_data.shape[1] # number of time bins
         assert M == 2, 'only 2D behavior is expected'
+        if 'Chewie' in short_dataset_name:
+            dropout, spike_dropout_rate = 0.2, 0.3
+        elif 'Mihili' in short_dataset_name:
+            dropout, spike_dropout_rate = 0.4, 0.4
         rnn = Decoder(input_size=N, 
                     rnn_size=128,
                     hidden_size=128, 
                     output_size=M, 
                     seq_len=T, 
-                    num_layers=1).to(device)
+                    num_layers=1,
+                    dropout=dropout,
+                    spike_dropout_rate=spike_dropout_rate).to(device)
 
         # Loss and optimizer
         loss = nn.MSELoss()
