@@ -43,15 +43,18 @@ def plot_avg_traj(data,true_target_direction,title='',epoch_mask=True):
     ''' plot average trajectory for each target direction '''
     true_label = get_target_ids(true_target_direction)
     n = data.shape[-1]
-    col, row = min(n,5), max(1,n//5)
+    col, row = min(n,5), max(1,int(np.ceil(n/5)))
     fig, ax = plt.subplots(row,col, figsize=(col*3,row*2),sharex=True)
     ax = ax.flatten()
+    assert len(ax)>=n, f'not enough axes created for {n} factors'
     for i in range(n):
         for j in np.unique(true_label):
             ax[i].plot(data[(true_label==j) & epoch_mask].mean(0)[...,i],label=f'{true_target_direction[true_label==j][0]:.2f}')
         ax[i].set_title(f'{title} {i}')
         if i==(col-1):
             ax[i].legend(loc = (1.01,0))
+    for i in range(n,len(ax)):
+        ax[i].axis("off")
     fig.tight_layout()
     return fig
 
@@ -136,8 +139,10 @@ model_dest = f"{best_model_dest}/{model_name}"
 overrides={
         "datamodule": dataset_name,
         "model": dataset_name.replace('_M1', '').replace('_PMd',''),
-        "model.encod_data_dim": sys.argv[3],
-        "model.behavior_weight": sys.argv[4],
+        "model.fac_dim": sys.argv[3],
+        "model.co_dim": sys.argv[4],
+        "model.encod_data_dim": sys.argv[5],
+        "model.behavior_weight": sys.argv[6],
     }
 config_path="../configs/single.yaml"
 

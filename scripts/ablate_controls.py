@@ -27,8 +27,10 @@ model_dest = f"{best_model_dest}/{model_name}"
 overrides={
         "datamodule": dataset_name,
         "model": dataset_name.replace('_M1', '').replace('_PMd',''),
-        "model.encod_data_dim": sys.argv[3],
-        "model.behavior_weight": sys.argv[4],
+        "model.fac_dim": sys.argv[3],
+        "model.co_dim": sys.argv[4],
+        "model.encod_data_dim": sys.argv[5],
+        "model.behavior_weight": sys.argv[6],
     }
 config_path="../configs/single.yaml"
 print(config_path)

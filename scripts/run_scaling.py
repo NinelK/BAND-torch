@@ -23,7 +23,7 @@ shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Switch to the `RUN_DIR` and train the model
 os.chdir(RUN_DIR)
 model_name = DATASET_STR.replace('_M1', '').replace('_PMd','')
-datamodule = DATASET_STR.replace('_small','')
+datamodule = DATASET_STR
 run_model(
     overrides={
         "datamodule": datamodule,
@@ -31,8 +31,10 @@ run_model(
         "logger.wandb_logger.project": PROJECT_STR,
         "logger.wandb_logger.tags.1": DATASET_STR,
         "logger.wandb_logger.tags.2": RUN_TAG,
-        "model.encod_data_dim": sys.argv[3],
-        "model.behavior_weight": sys.argv[4],
+        "model.fac_dim": sys.argv[3],
+        "model.co_dim": sys.argv[4],
+        "model.encod_data_dim": sys.argv[5],
+        "model.behavior_weight": sys.argv[6],
         
     },
     config_path="../configs/single.yaml",
