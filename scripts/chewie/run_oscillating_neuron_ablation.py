@@ -11,6 +11,23 @@ from scipy.stats import ttest_ind
 
 BIN_SIZE = 0.01 # seconds, i.e. 10ms
 
+def r2_UIVE_score(y_true, y_pred, dir_index):
+
+    vel = y_true.detach().cpu().numpy()
+    pred_vel = y_pred.detach().cpu().numpy()
+    
+    N = len(np.unique(dir_index))
+    assert np.allclose(np.arange(N),np.unique(dir_index))
+    avg_vel = [np.mean(vel[dir_index==d], axis=0) for d in range(N)]
+    total_var = [np.sum((vel[dir_index==d] - avg_vel[d])**2) for d in range(N)]
+    expl_var  = [np.sum((pred_vel[dir_index==d] - vel[dir_index==d])**2) for d in range(N)] 
+    for d in range(N):
+        if total_var[d] == 0:
+            total_var[d] = np.nan
+    R2_UIVE = np.nanmean([1 - expl_var[d] / total_var[d] for d in range(N)])
+
+    return R2_UIVE
+
 experiments = [
     "Chewie_CO_FF_2016-09-15",
     "Chewie_CO_FF_2016-09-21",
@@ -31,6 +48,17 @@ sel_idxs_all = {
         "Mihili_CO_FF_2014-02-17": [17],
         "Mihili_CO_FF_2014-02-18": [5, 15],
         "Mihili_CO_FF_2014-03-07": [2]
+    }
+
+n_M1 = {
+        "Chewie_CO_FF_2016-09-15": 76,
+        "Chewie_CO_FF_2016-09-21": 72,
+        "Chewie_CO_FF_2016-10-05": 81,
+        "Chewie_CO_FF_2016-10-07": 70,
+        "Mihili_CO_FF_2014-02-03": 34,  
+        "Mihili_CO_FF_2014-02-17": 44,
+        "Mihili_CO_FF_2014-02-18": 38,
+        "Mihili_CO_FF_2014-03-07": 26
     }
 
 summary_dict = {}   
@@ -57,6 +85,11 @@ for short_dataset_name in tqdm(experiments):
 
     train_target_direction=h5file['train_target_direction'][()].astype(np.float32)
     valid_target_direction=h5file['valid_target_direction'][()].astype(np.float32)
+
+    dir_index = np.array([
+        sorted(set(valid_target_direction)).index(i) for i in valid_target_direction
+    ])
+
     # print(h5file.keys())
     h5file.close()
 
@@ -124,8 +157,10 @@ for short_dataset_name in tqdm(experiments):
         rnn.eval()
         test_outputs = rnn(test_inputs)
 
-        return [r2_score(test_behaviors, test_outputs).item()] +\
-            [r2_score(test_behaviors[valid_epoch==e], test_outputs[valid_epoch==e]).item() for e in [0,1,2]]
+        return [r2_UIVE_score(test_behaviors, test_outputs, dir_index).item()] +\
+            [r2_UIVE_score(test_behaviors[valid_epoch==e], 
+                           test_outputs[valid_epoch==e], 
+                           dir_index[valid_epoch==e]).item() for e in [0,1,2]]
 
     sel_idxs =sel_idxs_all[short_dataset_name]
     n_ablate = len(sel_idxs)
@@ -136,7 +171,7 @@ for short_dataset_name in tqdm(experiments):
 
         top_score.append(train_and_get_r2(sel_idxs))
 
-        idxs = np.random.choice(range(train_data_raw.shape[-1]),n_ablate,replace=False)
+        idxs = np.random.choice(range(n_M1[short_dataset_name]),n_ablate,replace=False)
         r_score.append(train_and_get_r2(idxs))
 
     print(np.mean(no_ablation,axis=0),np.std(no_ablation,axis=0))
@@ -145,7 +180,7 @@ for short_dataset_name in tqdm(experiments):
 
     # save results as pkl
 
-    with open(f'./results/abl_r2_{short_dataset_name}.pkl', 'wb') as f:
+    with open(f'./results/abl_M1_r2_{short_dataset_name}.pkl', 'wb') as f:
         pickle.dump([no_ablation, top_score, r_score], f)
 
     t_top = [ttest_ind(np.array(no_ablation)[:,i], np.array(top_score)[:,i], axis=0, equal_var=False).pvalue for i in range(4)]
@@ -171,7 +206,7 @@ for short_dataset_name in tqdm(experiments):
 
 
 # save summary
-with open(f"./results/abl_R2.csv", "w") as f:
+with open(f"./results/abl_M1_R2.csv", "w") as f:
     get_column_names = summary_dict[experiments[0]].keys()
     f.write("Dataset,")
     for key in get_column_names:
