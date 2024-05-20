@@ -6,7 +6,7 @@ from glob import glob
 import pandas as pd
 import torch
 
-from .tuples import SessionBatch
+from .band_tuples import SessionBatch
 
 
 def flatten(dictionary, level=[]):

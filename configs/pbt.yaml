@@ -29,6 +29,7 @@ callbacks:
     metrics:
       - valid/recon_smth
       - cur_epoch
+      - valid/loss
     filename: tune.ckpt
     "on": validation_end
   learning_rate_monitor:
@@ -60,6 +61,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: False
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
+    _target_: lfads_torch.post_run.band_analysis.run_posterior_sampling
     filename: lfads_output.h5
     num_samples: 50

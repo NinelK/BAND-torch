@@ -19,7 +19,8 @@ OmegaConf.register_new_resolver(
 dataset_name = sys.argv[1]
 PATH = parent_path + '/datasets'
 
-best_model_dest = f"{parent_path}/runs/band-paper/{dataset_name}"
+# best_model_dest = f"{parent_path}/runs/band-paper/{dataset_name}"
+best_model_dest = f"{parent_path}/runs/pbt/{dataset_name}"
 
 model_name = sys.argv[2]
 model_dest = f"{best_model_dest}/{model_name}"
@@ -31,6 +32,7 @@ overrides={
         "model.co_dim": sys.argv[4],
         "model.encod_data_dim": sys.argv[5],
         "model.behavior_weight": sys.argv[6],
+        "seed": sys.argv[7]
     }
 config_path="../configs/single.yaml"
 print(config_path)
@@ -49,7 +51,8 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+# ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+ckpt_path = f'{model_dest}/best_model/checkpoint_epoch=779-step=780/tune.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 
@@ -65,4 +68,5 @@ run_posterior_sampling(model, datamodule, filename, num_samples=50)
 
 # placing the output file in the right folder, assuming recording had a single session
 filename = filename.split('.')[0] + '_sess0.h5'
-os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
+# os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
+os.replace(parent_path + '/' + filename, model_dest + '/best_model/' + filename)

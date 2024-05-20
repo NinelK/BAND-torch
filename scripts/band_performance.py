@@ -129,7 +129,8 @@ dataset_name = sys.argv[1] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
+# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
 model_name = sys.argv[2]
@@ -143,6 +144,7 @@ overrides={
         "model.co_dim": sys.argv[4],
         "model.encod_data_dim": sys.argv[5],
         "model.behavior_weight": sys.argv[6],
+        "seed": sys.argv[7]
     }
 config_path="../configs/single.yaml"
 
@@ -160,7 +162,8 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+# ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+ckpt_path = f'{model_dest}/best_model/checkpoint_epoch=779-step=780/tune.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 # load the dataset
@@ -177,7 +180,8 @@ with h5py.File(dataset_filename, 'r') as f:
     true_target_direction = f['valid_target_direction'][:]
 
 # load model components
-data_path = best_model_dest + model_name + '/lfads_output_sess0.h5'
+# data_path = best_model_dest + model_name + '/lfads_output_sess0.h5'
+data_path = best_model_dest + model_name + '/best_model/lfads_output_sess0.h5'
 with h5py.File(data_path) as f:
     # print(f.keys())
     # Merge train and valid data for factors and rates
@@ -194,7 +198,8 @@ with h5py.File(data_path) as f:
     train_ic = f['train_gen_init'][:]
 
 # load ablated model components
-data_path = best_model_dest + model_name + '/lfads_ablated_output_sess0.h5'
+# data_path = best_model_dest + model_name + '/lfads_ablated_output_sess0.h5'
+data_path = best_model_dest + model_name + '/best_model/lfads_ablated_output_sess0.h5'
 with h5py.File(data_path) as f:
     noci_factors = f["valid_factors"][:]
     noci_behavior = f["valid_output_behavior_params"][:]
@@ -233,13 +238,19 @@ ridge = Ridge(alpha=1).fit(X_train, Y_train)
 Y_pred_control = ridge.predict(X_test).reshape(true_valid_beh.shape)
 
 # save results in the summary file
-def save_results(f,area,mn,train_outputs, test_outputs):
-    if f'train_{area}_{mn}_pred' in f:
-        del f[f'train_{area}_{mn}_pred']
-    if f'test_{area}_{mn}_pred' in f:
-        del f[f'test_{area}_{mn}_pred']
-    f.create_dataset(f'train_{area}_{mn}_pred', data=train_outputs)
-    f.create_dataset(f'test_{area}_{mn}_pred', data=test_outputs)
+def save_results(f,area,mn,fac_dim,co_dim,train_outputs, test_outputs,sample=''):
+    if (sample=='') | (sample==0) | (sample=='0'):
+        sample_str = ''
+    else:
+        sample_str = f'_sample{sample}'
+    key = f'train_{area}_{mn}_{fac_dim}f_{co_dim}c{sample_str}_pred'
+    if key in f:
+        del f[key]
+    key = f'test_{area}_{mn}_{fac_dim}f_{co_dim}c{sample_str}_pred'
+    if key in f:
+        del f[key]
+    f.create_dataset(f'train_{area}_{mn}_{fac_dim}f_{co_dim}c{sample_str}_pred', data=train_outputs)
+    f.create_dataset(f'test_{area}_{mn}_{fac_dim}f_{co_dim}c{sample_str}_pred', data=test_outputs)
 
 short_dataset_name = dataset_name.replace('_M1', '').replace('_PMd','')
 if 'M1' in dataset_name:
@@ -258,9 +269,12 @@ elif 'band' in model_name:
     mn = 'band'
 else:
     raise ValueError(f'Unknown model name {model_name}')
-results_path = f'./results/{name_translation[short_dataset_name]}.h5'
-with h5py.File(results_path, 'a') as f:
-    save_results(f,area,mn,train_outputs, test_outputs)
+if short_dataset_name in name_translation:
+    results_path = f'./results/{name_translation[short_dataset_name]}.h5'
+    with h5py.File(results_path, 'a') as f:
+        save_results(f,area,mn,factors.shape[-1],controls.shape[-1],train_outputs, test_outputs, sample = sys.argv[7])
+else:
+    print(f'Unknown dataset name {short_dataset_name}')
 
 # Plot 1: plot behavior weight matrices
 seq_len = config.model.recon_seq_len

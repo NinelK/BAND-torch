@@ -5,7 +5,7 @@ encod_data_dim: 207
 encod_seq_len: 101
 recon_seq_len: 101
 ext_input_dim: 0
-ic_enc_seq_len: 25
+ic_enc_seq_len: 0
 ic_enc_dim: 64
 ci_enc_dim: 64
 ci_lag: 1
@@ -73,7 +73,7 @@ dropout_rate: 0.1 # sampled
 cell_clip: 5.0
 loss_scale: 1.0
 recon_reduce_mean: False
-behavior_weight: 0.
+behavior_weight: 0.1
 
 # --------- learning rate --------- #
 lr_init: 4.0e-3

@@ -28,7 +28,6 @@ def run_model(
     """Adds overrides to the default config, instantiates all PyTorch Lightning
     objects from config, and runs the training pipeline.
     """
-
     # Compose the train config with properly formatted overrides
     config_path = Path(config_path)
     overrides = [f"{k}={v}" for k, v in flatten(overrides).items()]
