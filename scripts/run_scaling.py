@@ -35,6 +35,7 @@ run_model(
         "model.co_dim": sys.argv[4],
         "model.encod_data_dim": sys.argv[5],
         "model.behavior_weight": sys.argv[6],
+        "seed": sys.argv[7]
         
     },
     config_path="../configs/single.yaml",
