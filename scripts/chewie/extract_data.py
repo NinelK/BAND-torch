@@ -34,6 +34,7 @@ alignment = "go"
 behaviour_key="vel"
 full_behaviour_key="pos"
 dataset_type = "session" # "BL", "AD", "WO", "session"
+data_type = 'spikes' # spikes or MUA
 
 summary_dict = {}
 
@@ -54,11 +55,41 @@ for experiment in experiments:
         shift_idx_fields=True,
     )
     print(spike_data_dir)
-    for activity_key in ["all_spikes",'M1_spikes','PMd_spikes']:
-        if activity_key == "all_spikes":
+    for activity_key in [f"all_{data_type}",f"M1_{data_type}",f"PMd_{data_type}"]:
+        
+        # create pseudo-MUA data
+        if 'MUA' in activity_key:
+            areas = ['M1', 'PMd']
+            n = {area: len(np.unique(pd_data[f"{area}_unit_guide"][0][:,0])) for area in areas}
+            MUAs = {area: [] for area in areas}
+            for area in areas:
+                for i in range(len(pd_data[f"{area}_spikes"])):
+                    this_trial_MUA = np.zeros((pd_data[f"{area}_spikes"][i].shape[0], n[area]))
+                    n_mua = -1
+                    ug = pd_data[f'{area}_unit_guide'][i]
+                    unique_units = np.unique(ug[:,0])
+                    min_el_id = 1
+                    assert ug[0,1] == min_el_id, "first neuron is not the first on the first electrode? wrong unit guide"
+                    for j in range(pd_data[f"{area}_spikes"][i].shape[1]):
+                        if ug[j,1] == min_el_id: # if the first neuron -- move on
+                            n_mua += 1
+                            this_trial_MUA[:,n_mua] = pd_data[f"{area}_spikes"][i][:,j]
+                            if n_mua + 1 >= n[area]:
+                                break
+                            min_el_id = ug[:,1][ug[:,0] == unique_units[n_mua+1]].min()
+                            if (min_el_id!=1) & (i==0): # report only for the first trial
+                                print(f'electrode {unique_units[n_mua+1]} has no neuron 1, only {min_el_id}')
+                        else: # for second and further neurons on the same electrode -- add spikes
+                            this_trial_MUA[:,n_mua] += pd_data[f"{area}_spikes"][i][:,j]
+                    MUAs[area].append(this_trial_MUA)
+                    assert (n_mua + 1) == n[area], f"n_mua = {n_mua}, n[{area}] = {n[area]}, not all neurons used?"
+            pd_data["M1_MUA"] = MUAs['M1']
+            pd_data["PMd_MUA"] = MUAs['PMd']
+        
+        if activity_key == f"all_{data_type}":
             pd_data[activity_key] = [
                 np.concatenate([m1, pmd], axis=1)
-                for m1, pmd in zip(pd_data["M1_spikes"], pd_data["PMd_spikes"])
+                for m1, pmd in zip(pd_data[f"M1_{data_type}"], pd_data[f"PMd_{data_type}"])
             ]
     
         if dataset_type == "session":  # all epochs
@@ -95,7 +126,7 @@ for experiment in experiments:
         print(
             f"Shortest : {shortest_trial}, longest: {longest_trial}, succesful trials: {len(successful_trials)}/{len(pd_data)}"
         )
-        if activity_key == "all_spikes":
+        if activity_key == f"all_{data_type}":
             trial_dur = shortest_trial
         else:
             shortest_trial = trial_dur  # overwrite
@@ -126,7 +157,7 @@ for experiment in experiments:
 
         print(train_data.shape, valid_data.shape)
 
-        if activity_key == "all_spikes":
+        if activity_key == f"all_{data_type}":
             summary_dict[experiment] = {
                 "train_trials": len(train_df),
                 "valid_trials": len(valid_df),

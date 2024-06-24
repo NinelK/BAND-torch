@@ -9,6 +9,8 @@ from lfads_torch.benchmark.biRNN_decoder import Decoder, r2_score
 num_epochs = 1000 # 1000 is enough
 batch_size = 100
 
+data_type = 'spikes' # 'spikes' or 'MUA'
+
 experiments = [
     "Chewie_CO_FF_2016-09-15",
     "Chewie_CO_FF_2016-09-21",
@@ -21,12 +23,20 @@ experiments = [
 ]
 
 def save_results(f,area,train_outputs, test_outputs):
-    if f'train_{area}_birnn_pred' in f:
-        del f[f'train_{area}_birnn_pred']
-    if f'test_{area}_birnn_pred' in f:
-        del f[f'test_{area}_birnn_pred']
-    f.create_dataset(f'train_{area}_birnn_pred', data=train_outputs)
-    f.create_dataset(f'test_{area}_birnn_pred', data=test_outputs)
+    
+    if data_type == 'spikes':
+        p = ''
+    elif data_type == 'MUA':
+        p = '_MUA'
+    else:
+        raise ValueError('data_type should be spikes or MUA')
+    
+    if f'train_{area}{p}_birnn_pred' in f:
+        del f[f'train_{area}{p}_birnn_pred']
+    if f'test_{area}{p}_birnn_pred' in f:
+        del f[f'test_{area}{p}_birnn_pred']
+    f.create_dataset(f'train_{area}{p}_birnn_pred', data=train_outputs)
+    f.create_dataset(f'test_{area}{p}_birnn_pred', data=test_outputs)
 
 summary_dict = {}   
 for short_dataset_name in tqdm(experiments):
@@ -35,7 +45,7 @@ for short_dataset_name in tqdm(experiments):
 
     for area in ['all','PMd','M1']:
 
-        dataset_name = f'{short_dataset_name}_session_vel_{area}_spikes_go'
+        dataset_name = f'{short_dataset_name}_session_vel_{area}_{data_type}_go'
         loadpath = f'/disk/scratch2/nkudryas/BAND-torch/datasets/{dataset_name}.h5'
 
         with h5py.File(loadpath, 'r') as h5file:
