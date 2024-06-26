@@ -159,6 +159,9 @@ for experiment in experiments:
 
         if activity_key == f"all_{data_type}":
             summary_dict[experiment] = {
+                "BL_trials": len(successful_trials.loc[successful_trials.epoch == "BL"]),
+                "AD_trials": len(successful_trials.loc[successful_trials.epoch == "AD"]),
+                "WO_trials": len(successful_trials.loc[successful_trials.epoch == "WO"]),
                 "train_trials": len(train_df),
                 "valid_trials": len(valid_df),
                 "duration": shortest_trial,

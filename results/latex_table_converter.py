@@ -1,7 +1,18 @@
 import pandas as pd
 
 # Read the CSV file
-df = pd.read_csv('PSID_decoder_R2.csv')
+df = pd.read_csv('dataset_summary.csv')
+
+#split 'Dataset' into Monkey and Date
+df[['Monkey','Date']] = df['Dataset'].str.split('_CO_FF_',expand=True)
+#remove ".mat" from Date
+df['Date'] = df['Date'].str.replace('.mat','')
+# remove 'Dataset' column
+df.drop(columns=['Dataset'],inplace=True)
+# place 'Monkey' and 'Data' in first columns
+cols = df.columns.tolist()
+cols = cols[-2:] + cols[:-2]
+df = df[cols]
 
 # Get column names from the DataFrame
 columns = df.columns
