@@ -52,7 +52,10 @@ datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
 # ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
-ckpt_path = f'{model_dest}/best_model/checkpoint_epoch=779-step=780/tune.ckpt'
+# check the latest checkpoint
+from glob import glob
+checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
+ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 
