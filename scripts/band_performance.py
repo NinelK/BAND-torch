@@ -285,7 +285,7 @@ else:
 if short_dataset_name in name_translation:
     results_path = f'./results/{name_translation[short_dataset_name]}.h5'
     with h5py.File(results_path, 'a') as f:
-        save_results(f,area,mn,factors.shape[-1],controls.shape[-1],train_outputs, test_outputs, sample = sys.argv[7])
+        save_results(f,area,mn,factors.shape[-1],controls.shape[-1],train_outputs, test_outputs)
 else:
     print(f'Unknown dataset name {short_dataset_name}')
 

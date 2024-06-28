@@ -5,7 +5,7 @@ encod_data_dim: 207
 encod_seq_len: 101
 recon_seq_len: 101
 ext_input_dim: 0
-ic_enc_seq_len: 0
+ic_enc_seq_len: 25
 ic_enc_dim: 64
 ci_enc_dim: 64
 ci_lag: 1
@@ -52,14 +52,14 @@ behavior_reconstruction:
   - _target_: lfads_torch.modules.recons.MSE
 variational: True
 co_prior:
-  _target_: lfads_torch.modules.priors.MultivariateStudentT
+  _target_: lfads_torch.modules.priors.MultivariateNormal
   # tau: 10.0
   # nvar: 0.1
-  # mean: 0
-  # variance: 0.1
-  loc: 0.
-  scale: 0.1
-  df: 1.
+  mean: 0
+  variance: 0.1
+  # loc: 0.
+  # scale: 1.
+  # df: 1.
   shape: ${model.co_dim}
 ic_prior:
   _target_: lfads_torch.modules.priors.MultivariateNormal
