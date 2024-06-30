@@ -16,25 +16,29 @@ OmegaConf.register_new_resolver(
     "relpath", lambda p: str(Path(f'{parent_path}/scripts/').parent / p)
 )
 
-dataset_name = sys.argv[1]
+MODEL_STR = sys.argv[1]
+dataset_name = sys.argv[2]
 PATH = parent_path + '/datasets'
 
 # best_model_dest = f"{parent_path}/runs/band-paper/{dataset_name}"
-best_model_dest = f"{parent_path}/runs/pbt/{dataset_name}"
+best_model_dest = f"{parent_path}/runs/pbt-band-paper/{dataset_name}"
 
-model_name = sys.argv[2]
+model_name = sys.argv[3]
 model_dest = f"{best_model_dest}/{model_name}"
 
+encod_seq_len = sys.argv[4]
 overrides={
         "datamodule": dataset_name,
-        "model": dataset_name.replace('_M1', '').replace('_PMd',''),
-        "model.fac_dim": sys.argv[3],
-        "model.co_dim": sys.argv[4],
-        "model.encod_data_dim": sys.argv[5],
-        "model.behavior_weight": sys.argv[6],
-        "seed": sys.argv[7]
+        "model": MODEL_STR, #dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model.encod_seq_len": encod_seq_len,
+        "model.recon_seq_len": encod_seq_len,
+        "model.fac_dim": sys.argv[5],
+        "model.co_dim": sys.argv[6],
+        "model.encod_data_dim": sys.argv[7],
+        "model.behavior_weight": sys.argv[8],
+        # "seed": sys.argv[7]
     }
-config_path="../configs/single.yaml"
+config_path="../configs/pbt.yaml"
 print(config_path)
 
 # Compose the train config with properly formatted overrides
@@ -66,10 +70,11 @@ B[len(B) // 2:] = -10 # making variance exp(-10)
 model.decoder.rnn.cell.co_linear.weight = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.co_linear.weight))
 model.decoder.rnn.cell.co_linear.bias = torch.nn.Parameter(B)
 
-filename = 'lfads_ablated_output.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
-run_posterior_sampling(model, datamodule, filename, num_samples=50)
+filename_source = f'lfads_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
+filename = 'lfads_ablated_output_sess0.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
+run_posterior_sampling(model, datamodule, filename_source, num_samples=50)
 
 # placing the output file in the right folder, assuming recording had a single session
-filename = filename.split('.')[0] + '_sess0.h5'
+filename_source = filename_source.split('.')[0] + '_sess0.h5'
 # os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
-os.replace(parent_path + '/' + filename, model_dest + '/best_model/' + filename)
+os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)

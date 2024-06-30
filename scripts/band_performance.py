@@ -130,29 +130,33 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
 
     plt.savefig(file_name)
 
-dataset_name = sys.argv[1] #'chewie_10_07'
+MODEL_STR = sys.argv[1]
+dataset_name = sys.argv[2] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
 # best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt/{dataset_name}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = sys.argv[2]
+model_name = sys.argv[3]
 model_dest = f"{best_model_dest}/{model_name}"
 
 # Load model
+encod_seq_len = sys.argv[4]
 overrides={
         "datamodule": dataset_name,
-        "model": dataset_name.replace('_M1', '').replace('_PMd',''),
-        "model.fac_dim": sys.argv[3],
-        "model.co_dim": sys.argv[4],
-        "model.encod_data_dim": sys.argv[5],
-        "model.behavior_weight": sys.argv[6],
-        "seed": sys.argv[7]
+        "model": MODEL_STR, #dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model.encod_seq_len": encod_seq_len,
+        "model.recon_seq_len": encod_seq_len,
+        "model.fac_dim": sys.argv[5],
+        "model.co_dim": sys.argv[6],
+        "model.encod_data_dim": sys.argv[7],
+        "model.behavior_weight": sys.argv[8],
+        # "seed": sys.argv[7]
     }
-config_path="../configs/single.yaml"
-co_dim = int(sys.argv[4])
+config_path="../configs/pbt.yaml"
+co_dim = int(sys.argv[5])
 
 # Compose the train config with properly formatted overrides
 config_path = Path(config_path)
