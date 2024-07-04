@@ -71,10 +71,14 @@ model.decoder.rnn.cell.co_linear.weight = torch.nn.Parameter(torch.zeros_like(mo
 model.decoder.rnn.cell.co_linear.bias = torch.nn.Parameter(B)
 
 filename_source = f'lfads_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
-filename = 'lfads_ablated_output_sess0.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
+data_paths = sorted(glob(datamodule.hparams.datafile_pattern))
+# Give each session a unique file path
+s = 0
+session = data_paths[s].split("/")[-1].split("_")[-1].split(".")[0]
+filename = f'lfads_ablated_output_{session}.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
 run_posterior_sampling(model, datamodule, filename_source, num_samples=50)
 
 # placing the output file in the right folder, assuming recording had a single session
-filename_source = filename_source.split('.')[0] + '_sess0.h5'
+filename_source = filename_source.split('.')[0] + f'_{session}.h5'
 # os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
 os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)
