@@ -300,7 +300,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     seq_len = config.model.recon_seq_len
     in_features = config.model.behavior_readout.modules[0].in_features
     out_features = config.model.behavior_readout.modules[0].out_features
-    beh_W = model.behavior_readout[0].layers[1].weight.T
+    beh_W = model.behavior_readout.layers[1].weight.T
 
     assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
 
