@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from numpy.fft import fft, fftfreq
+
 ### SHARED FUNCTIONS
 
 def get_trials2plot(pos, avg_pos, dir_index, epochs,epoch=1):
@@ -208,6 +210,144 @@ def plot_beh_pred_per_epoch(vel, pred_vel, dir_index, trials2plot, epochs, compo
 
     if file_name:
         plt.savefig(file_name)
+
+# FIGURE 3
+
+def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
+
+    for ax, m, exps in zip(axes, ['C','M'],[experiments[:4],experiments[4:]]):
+        for i,spike_data_dir in enumerate(exps):
+
+            # trial types are ordered in df
+            AD_start = np.where(epoch[spike_data_dir]=='AD')[0][0]
+            WO_start = np.where(epoch[spike_data_dir]=='WO')[0][0]
+
+            V = vel[spike_data_dir][AD_start:WO_start, :] # get data for AD trials, time point 80 onwards
+
+            SR = []
+            for _ in range(100):
+
+                idxs = np.random.choice(V.shape[0], V.shape[0], replace=True)
+                Sxx_comp = []
+                for c in [0,1]:
+
+                    x = V[idxs][...,c]
+
+                    xf = fft(x)  # Compute Fourier transform of x
+                    Sxx_all = (xf * xf.conj()).real # Compute power spectrum
+
+                    Sxx_comp.append(Sxx_all)
+                Sxx_comp = np.array(Sxx_comp) # [components, trials, freqs]
+                SR.append(np.sqrt(Sxx_comp.mean(0)).mean(0))
+
+            faxis = fftfreq(Sxx_all.shape[1]) / dt  # Construct frequency axis
+            SR = np.asarray(SR)
+
+            mask = (faxis > 0) & (faxis <= 10)
+            ax.plot(
+                faxis[mask],
+                SR.mean(0)[mask],c=f'C{i}')
+            
+            ax.fill_between(
+                faxis[mask],
+                SR.mean(0)[mask] - SR.std(0)[mask],
+                SR.mean(0)[mask] + SR.std(0)[mask],
+                alpha=0.3, color=f'C{i}', label=spike_data_dir.split('_')[3].split('.mat')[0][5:]
+            )
+
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('FFT Amplitude')
+        ax.set_title(f'Monkey {m}')
+        ax.set_ylim([0,150])
+        ax.set_xlim([0,10])
+        ax.legend()
+
+
+    axes[0].arrow(5., 110, 0, -10, color="k", head_width=.2, head_length=5)
+    axes[1].arrow(4., 120, 0, -10, color="k", head_width=.2, head_length=5)
+
+def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, plot='spectrum', peak_freq=5, color=None, vmax=500):
+
+    session = spike_data_dir.split('_')[3].split('.mat')[0][5:]
+    epoch_args = {'fontsize': 12, 'ha': 'center'}
+
+    # trial types are ordered in df
+    AD_start = np.where(epoch[spike_data_dir]=='AD')[0][0]
+    WO_start = np.where(epoch[spike_data_dir]=='WO')[0][0]
+
+    V = vel[spike_data_dir][:, :] # get data for all trials, time point 80 onwards
+    T = dt * V.shape[1]
+    # df = 1 / T  # Determine frequency resolution
+    # fNQ = 1 / dt / 2  # Determine Nyquist frequency
+    faxis = fftfreq(V.shape[1]) / dt  # Construct frequency axis
+    find_osc = np.argmin(np.abs(faxis-peak_freq))
+        
+    SR = []
+    Sxx_comp = []
+    for c in [0,1]:
+
+        x = V[...,c]
+
+        xf = fft(x)  # Compute Fourier transform of x
+        Sxx_all = (xf * xf.conj()).real # Compute spectrum
+
+        Sxx_comp.append(Sxx_all)
+    Sxx_comp = np.array(Sxx_comp) # [components, trials, freqs]
+    SR.append(np.sqrt(Sxx_comp.mean(0)).mean(0))
+
+    faxis = fftfreq(Sxx_all.shape[1]) / dt  # Construct frequency axis
+    SR = np.asarray(SR)
+    
+    SR = []
+    for c in [0,1]:
+        x = V[...,c]
+        xf = fft(x)  # Compute Fourier transform of x
+
+        # print(np.sum((xf*xf.conj()).real)/np.sum(x**2)*dt/T) # check that power sums to velocity**2
+
+        SR.append(np.sqrt((xf*xf.conj()).real))
+
+    SR = np.asarray(SR) # components, trials, frequencies
+
+    mask = (faxis>=0.) & (faxis<10.)
+
+    if plot == 'spectrum':
+        im = ax.imshow(SR.mean(0).T[mask],aspect='auto',cmap='plasma',vmin=0, vmax=vmax)
+        plt.colorbar(im, ax=ax, extend='max', label='FFT amplitude', location='bottom', pad=0.2)
+        ax.set_yticks(np.arange(0,len(faxis[mask]),2))
+        ax.set_yticklabels([f"{s:.2}" for s in faxis[mask][::2]])
+        ax.set_ylabel('freq, Hz')
+        # add arrow at peak frequency
+        arrow_len, arrow_head = AD_start / 3, AD_start / 10
+        ax.arrow(AD_start-1.2*arrow_len-arrow_head,find_osc, arrow_len, 0, color="white", head_width=.5, head_length=arrow_head)
+        # label epochs
+        epoch_args['color'] = 'white'
+        epoch_args['va'] = 'bottom'
+        epoch_y = len(faxis[mask])-0.5
+
+    elif plot == 'top_freq':
+        trials = np.arange(SR.shape[1])
+        ax.plot(trials,
+                    SR[...,find_osc].mean(0),c=color,alpha=0.5)
+        # gaussian filter
+        kernel = np.exp(-np.linspace(-3,3,50)**2)
+        kernel /= kernel.sum()
+        ax.plot(
+            trials,
+            np.convolve(SR[...,find_osc].mean(0), kernel, mode='same'),c=color,label='smoothed'
+        )
+        ax.set_ylabel(f'FFT Amplitude ({peak_freq} Hz)')
+        epoch_args['color'] = 'k'
+        epoch_args['va'] = 'top'
+        epoch_y = ax.get_ylim()[1]*0.95
+
+    ax.set_xlabel('trials, #')
+    ax.set_title(f'Monkey {monkey} (session {session})')
+    ax.axvline(AD_start,c='k')
+    ax.axvline(WO_start,c='k')
+    ax.text(AD_start/2, epoch_y, 'BL', **epoch_args)
+    ax.text(AD_start+(WO_start-AD_start)/2, epoch_y, 'AD', **epoch_args)
+    ax.text(WO_start+(SR.shape[1]-WO_start)/2, epoch_y, 'WO', **epoch_args)
 
 # FIGURE 4
     
