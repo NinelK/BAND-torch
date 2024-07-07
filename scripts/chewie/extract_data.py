@@ -27,9 +27,7 @@ experiments = [
 ]
 
 trial_dur = None # will be set to the shortest trial duration
-perc_train = 80
-perc_valid = 20
-assert perc_train + perc_valid == 100
+n_folds = 5
 alignment = "go"
 behaviour_key="vel"
 full_behaviour_key="pos"
@@ -131,179 +129,167 @@ for experiment in experiments:
         else:
             shortest_trial = trial_dur  # overwrite
 
-        n_train = np.round(len(successful_trials) / 100 * perc_train).astype(int)
-        n_valid = np.round(len(successful_trials) / 100 * perc_valid).astype(int)
-        
-        np.random.seed(42)
-        order = np.random.permutation(len(successful_trials))            
-        train_df = successful_trials.iloc[order[:n_train]]
-        valid_df = successful_trials.iloc[order[n_train:]]
-
-        train_df.idx_movement_on = train_df.idx_movement_on.astype(int)
-        valid_df.idx_movement_on = valid_df.idx_movement_on.astype(int)
-
-        train_data = np.asarray(
-            [
-                d[activity_key][d[start_key] : d[start_key] + shortest_trial, :]
-                for i, d in train_df.iterrows()
-            ]
-        )
-        valid_data = np.asarray(
-            [
-                d[activity_key][d[start_key] : d[start_key] + shortest_trial, :]
-                for i, d in valid_df.iterrows()
-            ]
-        )
-
-        print(train_data.shape, valid_data.shape)
-
-        if activity_key == f"all_{data_type}":
-            summary_dict[experiment] = {
-                "BL_trials": len(successful_trials.loc[successful_trials.epoch == "BL"]),
-                "AD_trials": len(successful_trials.loc[successful_trials.epoch == "AD"]),
-                "WO_trials": len(successful_trials.loc[successful_trials.epoch == "WO"]),
-                "train_trials": len(train_df),
-                "valid_trials": len(valid_df),
-                "duration": shortest_trial,
-                "all_neurons": train_data.shape[2]
-                }
-        else:
-            summary_dict[experiment][f"{activity_key.split('_')[0]}_neurons"] = train_data.shape[2]
- 
-        train_target_direction = np.asarray(
-            [d["target_direction"] for i, d in train_df.iterrows()]
-        )
-        valid_target_direction = np.asarray(
-            [d["target_direction"] for i, d in valid_df.iterrows()]
-        )
-
-        train_trial = np.asarray([d["trial_id"] for i, d in train_df.iterrows()])
-        valid_trial = np.asarray([d["trial_id"] for i, d in valid_df.iterrows()])
-        
-        train_behaviours = np.asarray(
-            [
-                d[behaviour_key][d[start_key] : d[start_key] + shortest_trial, :]
-                for i, d in train_df.iterrows()
-            ]
-        )
-        valid_behaviours = np.asarray(
-            [
-                d[behaviour_key][d[start_key] : d[start_key] + shortest_trial, :]
-                for i, d in valid_df.iterrows()
-            ]
-        )
-
-        train_pos = np.asarray(
-            [
-                d[full_behaviour_key][
-                    d[start_key] : d[start_key] + shortest_trial, :
-                ]
-                for i, d in train_df.iterrows()
-            ]
-        )
-        valid_pos = np.asarray(
-            [
-                d[full_behaviour_key][
-                    d[start_key] : d[start_key] + shortest_trial, :
-                ]
-                for i, d in valid_df.iterrows()
-            ]
-        )
-
-        origin = train_pos[:, 0].mean(0)
-        train_pos -= origin
-        valid_pos -= origin
-
-        train_epoch = np.asarray(
-            [etype(d["epoch"]) for i, d in train_df.iterrows()]
-        )
-        valid_epoch = np.asarray(
-            [etype(d["epoch"]) for i, d in valid_df.iterrows()]
-        )
-
         # exclude bad trials
-        train_trials_to_exclude = np.unique(np.where(np.abs(train_behaviours) > 100)[0])
-        valid_trials_to_exclude = np.unique(np.where(np.abs(valid_behaviours) > 100)[0])
-        train_trial_mask = np.arange(train_pos.shape[0])
-        valid_trial_mask = np.arange(valid_pos.shape[0])
-        train_trial_mask = np.delete(train_trial_mask,train_trials_to_exclude)
-        valid_trial_mask = np.delete(valid_trial_mask,valid_trials_to_exclude)
-        print('Exclude trials with bad velocity: ',train_trials_to_exclude,valid_trials_to_exclude)
-
-        # vel = np.concatenate([train_behaviours,valid_behaviours],axis=0)
-        # pos = np.concatenate([train_pos,valid_pos],axis=0)
-        # target_direction = np.concatenate([train_target_direction,valid_target_direction],axis=0)
-        # # 1st those that have unrealistically high jumps in velocity
-        # trials_to_exclude = np.unique(np.where(np.abs(vel) > 50)[0])
-        # print('Exclude trials with bad velocity: ',trials_to_exclude)
-        # # 2nd those that reach to a wrong target
-        # end_points = pos[:,-1,:]
-        # target_end_points = np.zeros_like(end_points)
-        # for d in np.unique(target_direction):
-        #     target_end_points[target_direction==d] = end_points[target_direction==d].mean(0)
-        # te = np.where(np.linalg.norm(end_points - target_end_points,axis=-1) > 5)[0]
-        # print('Exclude trials reaching to a wrong target: ',te)
-        # trials_to_exclude = np.concatenate([trials_to_exclude,te])        
-        # train_trial_mask = np.arange(train_pos.shape[0])
-        # valid_trial_mask = np.arange(valid_pos.shape[0])
-        # train_trial_mask = np.delete(train_trial_mask,trials_to_exclude[trials_to_exclude < train_pos.shape[0]])
-        # valid_trial_mask = np.delete(valid_trial_mask,trials_to_exclude[trials_to_exclude >= train_pos.shape[0]])-train_pos.shape[0])
-
-        data_dir = (
-            data_save_dir
-            + spike_data_dir[:-4]
-            + "_"
-            + dataset_type
-            + "_"
-            + behaviour_key
-            + "_"
-            + activity_key
-            + "_"
-            + alignment
+        behaviours = np.asarray(
+            [
+                d[behaviour_key][d[start_key] : d[start_key] + shortest_trial, :]
+                for i, d in successful_trials.iterrows()
+            ]
         )
+        trials_to_exclude = np.unique(np.where(np.abs(behaviours) > 100)[0])
+        trial_mask = np.arange(behaviours.shape[0])
+        trial_mask = np.delete(trial_mask,trials_to_exclude)
+        print('Exclude trials with bad velocity: ',trials_to_exclude)
+        # EXCLUDE
+        successful_trials = successful_trials.iloc[trial_mask]
+        print('Number of trials after excluding: ',len(successful_trials))
 
-        filename = data_dir + f".h5"
+        order = np.arange(len(successful_trials)) % n_folds
 
-        with h5py.File(filename, 'w') as h5file:
-            # variables needed for training
-            h5file.create_dataset('train_encod_data', data=train_data[train_trial_mask])
-            h5file.create_dataset('valid_encod_data', data=valid_data[valid_trial_mask])
-            h5file.create_dataset('train_recon_data', data=train_data[train_trial_mask])
-            h5file.create_dataset('valid_recon_data', data=valid_data[valid_trial_mask])
-            h5file.create_dataset('train_behavior', data=train_behaviours[train_trial_mask])
-            h5file.create_dataset('valid_behavior', data=valid_behaviours[valid_trial_mask])
-            # variables needed for post analysis
-            h5file.create_dataset('train_inds', data=train_trial[train_trial_mask])
-            h5file.create_dataset('valid_inds', data=valid_trial[valid_trial_mask])
-            h5file.create_dataset('train_epoch', data=train_epoch[train_trial_mask])
-            h5file.create_dataset('valid_epoch', data=valid_epoch[valid_trial_mask])
-            h5file.create_dataset('train_pos', data=train_pos[train_trial_mask])
-            h5file.create_dataset('valid_pos', data=valid_pos[valid_trial_mask])
-            h5file.create_dataset('train_vel', data=train_behaviours[train_trial_mask])
-            h5file.create_dataset('valid_vel', data=valid_behaviours[valid_trial_mask])
-            h5file.create_dataset('train_target_direction', data=train_target_direction[train_trial_mask])
-            h5file.create_dataset('valid_target_direction', data=valid_target_direction[valid_trial_mask])
+        for fold in range(n_folds):            
+            train_df = successful_trials.iloc[order != fold]
+            valid_df = successful_trials.iloc[order == fold]
 
-        short_dataset_name = spike_data_dir[:-4]
+            train_df.idx_movement_on = train_df.idx_movement_on.astype(int)
+            valid_df.idx_movement_on = valid_df.idx_movement_on.astype(int)
 
-         # check if results file is there
-        results_path = f'./results/{short_dataset_name}.h5'
-        if not os.path.exists(results_path):
-            with h5py.File(results_path, 'w') as f:               
-                f.create_dataset('train_behavior', data=train_behaviours[train_trial_mask])
-                f.create_dataset('valid_behavior', data=valid_behaviours[valid_trial_mask])
-                f.create_dataset('train_target_direction', data=train_target_direction[train_trial_mask])
-                f.create_dataset('valid_target_direction', data=valid_target_direction[valid_trial_mask])
-                f.create_dataset('train_epoch', data=train_epoch[train_trial_mask])
-                f.create_dataset('valid_epoch', data=valid_epoch[valid_trial_mask])
-                f.create_dataset('train_inds', data=train_trial[train_trial_mask])
-                f.create_dataset('valid_inds', data=valid_trial[valid_trial_mask])
+            train_data = np.asarray(
+                [
+                    d[activity_key][d[start_key] : d[start_key] + shortest_trial, :]
+                    for i, d in train_df.iterrows()
+                ]
+            )
+            valid_data = np.asarray(
+                [
+                    d[activity_key][d[start_key] : d[start_key] + shortest_trial, :]
+                    for i, d in valid_df.iterrows()
+                ]
+            )
 
-           
+            print(train_data.shape, valid_data.shape)
+
+            key = experiment + "_cv" + str(fold)
+            if activity_key == f"all_{data_type}":
+                summary_dict[key] = {
+                    "BL_trials": len(successful_trials.loc[successful_trials.epoch == "BL"]),
+                    "AD_trials": len(successful_trials.loc[successful_trials.epoch == "AD"]),
+                    "WO_trials": len(successful_trials.loc[successful_trials.epoch == "WO"]),
+                    "train_trials": len(train_df),
+                    "valid_trials": len(valid_df),
+                    "duration": shortest_trial,
+                    "all_neurons": train_data.shape[2]
+                    }
+            else:
+                summary_dict[key][f"{activity_key.split('_')[0]}_neurons"] = train_data.shape[2]
+    
+            train_target_direction = np.asarray(
+                [d["target_direction"] for i, d in train_df.iterrows()]
+            )
+            valid_target_direction = np.asarray(
+                [d["target_direction"] for i, d in valid_df.iterrows()]
+            )
+
+            train_trial = np.asarray([d["trial_id"] for i, d in train_df.iterrows()])
+            valid_trial = np.asarray([d["trial_id"] for i, d in valid_df.iterrows()])
+            
+            train_behaviours = np.asarray(
+                [
+                    d[behaviour_key][d[start_key] : d[start_key] + shortest_trial, :]
+                    for i, d in train_df.iterrows()
+                ]
+            )
+            valid_behaviours = np.asarray(
+                [
+                    d[behaviour_key][d[start_key] : d[start_key] + shortest_trial, :]
+                    for i, d in valid_df.iterrows()
+                ]
+            )
+
+            train_pos = np.asarray(
+                [
+                    d[full_behaviour_key][
+                        d[start_key] : d[start_key] + shortest_trial, :
+                    ]
+                    for i, d in train_df.iterrows()
+                ]
+            )
+            valid_pos = np.asarray(
+                [
+                    d[full_behaviour_key][
+                        d[start_key] : d[start_key] + shortest_trial, :
+                    ]
+                    for i, d in valid_df.iterrows()
+                ]
+            )
+
+            origin = train_pos[:, 0].mean(0)
+            train_pos -= origin
+            valid_pos -= origin
+
+            train_epoch = np.asarray(
+                [etype(d["epoch"]) for i, d in train_df.iterrows()]
+            )
+            valid_epoch = np.asarray(
+                [etype(d["epoch"]) for i, d in valid_df.iterrows()]
+            )
+
+            data_dir = (
+                data_save_dir
+                + spike_data_dir[:-4]
+                + "_"
+                + dataset_type
+                + "_"
+                + behaviour_key
+                + "_"
+                + activity_key
+                + "_"
+                + alignment
+                + "_cv"
+                + str(fold)
+            )
+
+            filename = data_dir + f".h5"
+
+            with h5py.File(filename, 'w') as h5file:
+                # variables needed for training
+                h5file.create_dataset('train_encod_data', data=train_data)
+                h5file.create_dataset('valid_encod_data', data=valid_data)
+                h5file.create_dataset('train_recon_data', data=train_data)
+                h5file.create_dataset('valid_recon_data', data=valid_data)
+                h5file.create_dataset('train_behavior', data=train_behaviours)
+                h5file.create_dataset('valid_behavior', data=valid_behaviours)
+                # variables needed for post analysis
+                h5file.create_dataset('train_inds', data=train_trial)
+                h5file.create_dataset('valid_inds', data=valid_trial)
+                h5file.create_dataset('train_epoch', data=train_epoch)
+                h5file.create_dataset('valid_epoch', data=valid_epoch)
+                h5file.create_dataset('train_pos', data=train_pos)
+                h5file.create_dataset('valid_pos', data=valid_pos)
+                h5file.create_dataset('train_vel', data=train_behaviours)
+                h5file.create_dataset('valid_vel', data=valid_behaviours)
+                h5file.create_dataset('train_target_direction', data=train_target_direction)
+                h5file.create_dataset('valid_target_direction', data=valid_target_direction)
+
+            short_dataset_name = spike_data_dir[:-4]
+
+            # check if results file is there
+            results_path = f'./results/{short_dataset_name}_cv{fold}.h5'
+            if not os.path.exists(results_path):
+                with h5py.File(results_path, 'w') as f:               
+                    f.create_dataset('train_behavior', data=train_behaviours)
+                    f.create_dataset('valid_behavior', data=valid_behaviours)
+                    f.create_dataset('train_target_direction', data=train_target_direction)
+                    f.create_dataset('valid_target_direction', data=valid_target_direction)
+                    f.create_dataset('train_epoch', data=train_epoch)
+                    f.create_dataset('valid_epoch', data=valid_epoch)
+                    f.create_dataset('train_inds', data=train_trial)
+                    f.create_dataset('valid_inds', data=valid_trial)
+
+            
 
 # save summary
 with open("./results/dataset_summary.csv", "w") as f:
-    get_column_names = summary_dict[experiments[0]].keys()
+    get_column_names = summary_dict[f"{experiments[0]}_cv0"].keys()
     f.write("Dataset,")
     for key in get_column_names:
         f.write(f"{key},\t")

@@ -10,11 +10,15 @@ ignore_warnings: True
 trainer:
   _target_: pytorch_lightning.Trainer
   gradient_clip_val: 200
-  max_epochs: 1_000
+  max_epochs: 2_000
   log_every_n_steps: 5
   # Prevent console output by individual models
   enable_progress_bar: False
   enable_model_summary: False
+
+# Allow PBT to handle LR scheduling
+model:
+  lr_scheduler: False
 
 # `callbacks` and `logger` must be composed as dicts, then passed to `trainer` as lists
 callbacks:
@@ -27,12 +31,6 @@ callbacks:
     verbose: False
     dirpath: lightning_checkpoints
     auto_insert_metric_name: False
-  early_stopping:
-    _target_: pytorch_lightning.callbacks.EarlyStopping
-    monitor: valid/recon_smth
-    mode: min
-    patience: 200
-    min_delta: 0
   tune_report_checkpoint_callback:
     _target_: ray.tune.integration.pytorch_lightning.TuneReportCheckpointCallback
     metrics:
@@ -69,6 +67,6 @@ logger:
 posterior_sampling:
   use_best_ckpt: True
   fn:
-    _target_: lfads_torch.post_run.analysis.run_posterior_sampling
+    _target_: lfads_torch.post_run.band_analysis.run_posterior_sampling
     filename: lfads_output.h5
     num_samples: 50

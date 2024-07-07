@@ -145,6 +145,7 @@ class BasicDataModule(pl.LightningDataModule):
         sv_rate: float = 0.0,
         sv_seed: int = 0,
         dm_ic_enc_seq_len: int = 0,
+        fold = None
     ):
         assert (
             reshuffle_tv_seed is None or len(attr_keys) == 0
@@ -155,6 +156,9 @@ class BasicDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         hps = self.hparams
         data_dicts = []
+        if hps.fold is not None:
+            hps.datafile_pattern = hps.datafile_pattern.replace(".h5", f"_cv{hps.fold}.h5")
+            print(hps.datafile_pattern)
         data_paths = sorted(glob(hps.datafile_pattern))
         for data_path in data_paths:
             # Load data arrays from the file

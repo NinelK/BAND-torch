@@ -25,12 +25,10 @@ readout:
       in_features: ${model.fac_dim}
       out_features: ${model.encod_data_dim}
 behavior_readout:
-  _target_: torch.nn.ModuleList
-  modules:
-    - _target_: lfads_torch.modules.readin_readout.FanInSeq2Seq
-      in_features: ${model.fac_dim}
-      out_features: 2
-      time_features: ${model.encod_seq_len}
+  _target_: lfads_torch.modules.readin_readout.FanInSeq2Seq
+  in_features: ${model.fac_dim}
+  out_features: 2
+  time_features: ${model.encod_seq_len}
 
 # --------- augmentation --------- #
 train_aug_stack:

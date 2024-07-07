@@ -50,13 +50,13 @@ logger:
       _target_: ray.tune.get_trial_dir
     version: ""
     name: ""
-  wandb_logger:
-    _target_: pytorch_lightning.loggers.WandbLogger
-    project: null # Overwrite with PROJECT_STR in the run script
-    tags:
-      - pbt
-      - null # Overwrite with DATASET_STR in the run script
-      - null # Overwrite with RUN_TAG in the run script
+  # wandb_logger:
+  #   _target_: pytorch_lightning.loggers.WandbLogger
+  #   project: null # Overwrite with PROJECT_STR in the run script
+  #   tags:
+  #     - pbt
+  #     - null # Overwrite with DATASET_STR in the run script
+  #     - null # Overwrite with RUN_TAG in the run script
 
 posterior_sampling:
   use_best_ckpt: False
