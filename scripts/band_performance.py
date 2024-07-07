@@ -136,7 +136,8 @@ bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
 # best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{dataset_name}/"
+# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{dataset_name}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-longitudinal/{dataset_name}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
 model_name = sys.argv[3]
@@ -156,7 +157,7 @@ overrides={
         # "seed": sys.argv[7]
     }
 config_path="../configs/pbt.yaml"
-co_dim = int(sys.argv[5])
+co_dim = int(sys.argv[6])
 
 # Compose the train config with properly formatted overrides
 config_path = Path(config_path)
@@ -182,9 +183,8 @@ model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 # load the dataset
 data_paths = sorted(glob(config.datamodule.datafile_pattern))
 # Give each session a unique file path
-s = 0
-session = data_paths[s].split("/")[-1].split("_")[-1].split(".")[0]
 for sess_id, dataset_filename in enumerate(data_paths):
+    session = dataset_filename.split("/")[-1].split("_")[-1].split(".")[0]
     
     with h5py.File(dataset_filename, 'r') as f:
         train_data = f['train_recon_data'][:]
@@ -298,8 +298,8 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     # Plot 1: plot behavior weight matrices
     seq_len = config.model.recon_seq_len
-    in_features = config.model.behavior_readout.modules[0].in_features
-    out_features = config.model.behavior_readout.modules[0].out_features
+    in_features = config.model.behavior_readout.in_features
+    out_features = config.model.behavior_readout.out_features
     beh_W = model.behavior_readout.layers[1].weight.T
 
     assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
@@ -325,7 +325,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     # print(train_ic.shape,ic_pca.shape)
 
     # t-sne on initial conditions
-    tsne = TSNE(n_components=2)
+    tsne = TSNE(n_components=2, perplexity=min(ic.shape[0]//2,30.0))
     ic_tsne = tsne.fit_transform(ic)
 
     fig, axes = plt.subplots(1,2,figsize=(5,2))
@@ -354,7 +354,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     # Plot 3: plot factors / controls / behavior prediction for 1 example trial
 
-    trial_id = 13
+    trial_id = 0
     fig, ax = plt.subplots(3,4, figsize=(15,6),sharex=True)
     ax[0,0].plot(factors[trial_id] - factors[trial_id].mean(0))
     if co_dim > 0:
