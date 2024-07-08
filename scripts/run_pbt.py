@@ -24,7 +24,7 @@ RUN_TAG = sys.argv[3]
 encod_seq_len = sys.argv[4]
 fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
-cpus = 3
+cpus = 2
 
 RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 

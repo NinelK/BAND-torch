@@ -9,7 +9,9 @@ from matplotlib import cm
 from matplotlib.axes import Axes
 
 import numpy as np
+import pandas as pd
 import h5py
+from scipy.stats import poisson
 from sklearn.linear_model import Ridge 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -130,24 +132,33 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
 
     plt.savefig(file_name)
 
+OLD = False
+
 MODEL_STR = sys.argv[1]
-dataset_name = sys.argv[2] #'chewie_10_07'
+DATASET_STR = sys.argv[2] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
-# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{dataset_name}/"
-# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{dataset_name}/"
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-longitudinal/{dataset_name}/"
+# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{DATASET_STR}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{DATASET_STR}/"
+# best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-longitudinal/{DATASET_STR}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
 model_name = sys.argv[3]
 model_dest = f"{best_model_dest}/{model_name}"
 
+fold = None
+if '_cv' in DATASET_STR:
+    dataset_name, fold = DATASET_STR.split('_cv')
+    print('CV fold: ',fold)
+else:
+    dataset_name = DATASET_STR
+
 # Load model
 encod_seq_len = sys.argv[4]
 overrides={
         "datamodule": dataset_name,
-        "model": MODEL_STR, #dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model": MODEL_STR+("_old" if OLD else ""), #dataset_name.replace('_M1', '').replace('_PMd',''),
         "model.encod_seq_len": encod_seq_len,
         "model.recon_seq_len": encod_seq_len,
         "model.fac_dim": sys.argv[5],
@@ -156,6 +167,8 @@ overrides={
         "model.behavior_weight": sys.argv[8],
         # "seed": sys.argv[7]
     }
+if fold is not None:
+    overrides["datamodule.fold"] = fold
 config_path="../configs/pbt.yaml"
 co_dim = int(sys.argv[6])
 
@@ -181,11 +194,22 @@ ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 # load the dataset
-data_paths = sorted(glob(config.datamodule.datafile_pattern))
+if fold is not None:
+    datafile_pattern = config.datamodule.datafile_pattern.replace(".h5", f"_cv{fold}.h5")
+else:
+    datafile_pattern = config.datamodule.datafile_pattern
+data_paths = sorted(glob(datafile_pattern))
 # Give each session a unique file path
 for sess_id, dataset_filename in enumerate(data_paths):
-    session = dataset_filename.split("/")[-1].split("_")[-1].split(".")[0]
+    if OLD:
+        session = 'sess0'
+    else:
+        session = dataset_filename.split("/")[-1].split("_")[-1].split(".")[0]
+        if fold is not None:
+            session = f"cv{fold}"
     
+    print(dataset_filename)
+
     with h5py.File(dataset_filename, 'r') as f:
         train_data = f['train_recon_data'][:]
         valid_data = f['valid_recon_data'][:]
@@ -220,8 +244,25 @@ for sess_id, dataset_filename in enumerate(data_paths):
         with h5py.File(data_path) as f:
             noci_factors = f["valid_factors"][:]
             noci_behavior = f["valid_output_behavior_params"][:]
+            noci_rates = f["valid_output_params"][:] / bin_width_sec
             # noci_controls = f['valid_gen_inputs'][:]
         
+    # calculate LL diff
+    valid_mean_count = valid_data.mean(0).mean(0) # to get Hz -> x100
+    base_LL = poisson.logpmf(valid_data, valid_mean_count)
+    n_sp = valid_data.sum()
+
+    valid_LL = {'LL': poisson.logpmf(valid_data, bin_width_sec * rates), 
+                'LL_noci': poisson.logpmf(valid_data, bin_width_sec * noci_rates),}
+    valid_co_bps = {key: np.sum(valid_LL[key] - base_LL)/(n_sp * np.log(2)) for key in valid_LL.keys()}
+    # add same AD
+    valid_co_bps_AD = {key+'_AD': np.sum(valid_LL[key][valid_epoch == 1] - base_LL[valid_epoch == 1])/(n_sp * np.log(2)) for key in valid_LL.keys()}
+    valid_co_bps.update(valid_co_bps_AD)
+    print(f"LL diff: {valid_co_bps}")
+    # save to csv
+    df = pd.DataFrame(valid_co_bps, index=[0])
+    df.to_csv(f"{model_dest}/LL_diff.csv")
+    
     # Run behavior prediction
     # train Ridge regression to predict behavior from factors (0lag)
     X_train = train_factors.reshape(-1,train_factors.shape[-1])
@@ -298,9 +339,14 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     # Plot 1: plot behavior weight matrices
     seq_len = config.model.recon_seq_len
-    in_features = config.model.behavior_readout.in_features
-    out_features = config.model.behavior_readout.out_features
-    beh_W = model.behavior_readout.layers[1].weight.T
+    if OLD:
+        in_features = config.model.behavior_readout.modules[0].in_features
+        out_features = config.model.behavior_readout.modules[0].out_features
+        beh_W = model.behavior_readout[0].layers[1].weight.T
+    else:
+        in_features = config.model.behavior_readout.in_features
+        out_features = config.model.behavior_readout.out_features
+        beh_W = model.behavior_readout.layers[1].weight.T
 
     assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
 
@@ -392,6 +438,23 @@ for sess_id, dataset_filename in enumerate(data_paths):
         ax[2,1].set_title(f'0lag from factors no CI (R2 = {R2(Y_pred_noci_0lag,true_valid_beh):.1f}%)')
         ax[2,2].set_title(f'seq2seq from factors no CI (R2 = {R2(Y_pred_noci_seq2seq,true_valid_beh):.1f}%)')
         ax[2,3].set_title(f'band behavior no CI (R2 = {R2(noci_behavior,true_valid_beh):.1f}%)')
+
+    # combine R2 results and save as csv
+    R2_results = {  'seq2seq from factors': R2(Y_pred_seq2seq,true_valid_beh),
+                    'seq2seq from factors no CI': R2(Y_pred_noci_seq2seq,true_valid_beh),
+                    'seq2seq from factprs in AD': R2(Y_pred_seq2seq[valid_epoch == 1],true_valid_beh[valid_epoch == 1]),
+                    'seq2seq from factors no CI in AD': R2(Y_pred_noci_seq2seq[valid_epoch == 1],true_valid_beh[valid_epoch == 1]),
+                    'band behavior': R2(behavior,true_valid_beh),
+                    'band behavior no CI': R2(noci_behavior,true_valid_beh),
+                    'band behavior in AD': R2(behavior[valid_epoch == 1],true_valid_beh[valid_epoch == 1]),
+                    'band behavior no CI in AD': R2(noci_behavior[valid_epoch == 1],true_valid_beh[valid_epoch == 1]),
+                    'seq2seq from controls': R2(Y_pred_control,true_valid_beh)}
+    # print(f"R2 results: {R2_results}")
+    # save to csv
+
+    df = pd.DataFrame(R2_results, index=[0])
+    df.to_csv(f"{model_dest}/R2_results.csv")
+    
 
     fig.tight_layout()
 
