@@ -145,7 +145,7 @@ class BasicDataModule(pl.LightningDataModule):
         sv_rate: float = 0.0,
         sv_seed: int = 0,
         dm_ic_enc_seq_len: int = 0,
-        fold = None
+        fold: int = None
     ):
         assert (
             reshuffle_tv_seed is None or len(attr_keys) == 0
