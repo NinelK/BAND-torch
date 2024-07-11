@@ -7,7 +7,7 @@ import sys
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS -----------
-PROJECT_STR = "band-paper"
+PROJECT_STR = "longitudinal"
 DATASET_STR = sys.argv[1] #"chewie_10_07"  # "nlb_area2_bump"
 RUN_TAG = sys.argv[2] #datetime.now().strftime("%y%m%d_%H%M%S") + "_kl"
 RUN_DIR = Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
