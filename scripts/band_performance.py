@@ -34,6 +34,9 @@ name_translation = {
     'mihili_03_07': 'Mihili_CO_FF_2014-03-07',
 }
 
+# TODO ideally this needs modularization. There are multiple versions of similar R2s and plots, 
+# it should all be moved to lfads_torch/metrics.py and plot_helpers.py (which is now in notebooks/paper/plot_helpers.py)
+
 def R2(pred_beh,true_beh):
     return (1 - np.sum((pred_beh - true_beh)**2) / np.sum((true_beh - np.mean(true_beh))**2)) * 100
 
