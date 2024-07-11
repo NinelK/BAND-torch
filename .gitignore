@@ -157,3 +157,8 @@ configs/datamodule/*
 ComputationThruDynamicsBenchmark/
 datasets/Tauriel/     
 results_no_excl_trials/
+
+notebooks/COSYNE/
+notebooks/pre/PyalData/
+
+wandb/
