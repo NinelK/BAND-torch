@@ -60,9 +60,11 @@ class DecoderCell(nn.Module):
         gen_state, con_state, co_mean, co_std, gen_input, factor = torch.split(
             h_0, self.state_dims, dim=1
         )
-        ci_step, ext_input_step = torch.split(input, self.input_dims, dim=1)
-
+        
         if self.use_con:
+
+            ci_step, ext_input_step = torch.split(input, self.input_dims, dim=1)
+
             # Compute controller inputs with dropout
             con_input = torch.cat([ci_step, factor], dim=1)
             con_input_drop = self.dropout(con_input)
@@ -79,7 +81,7 @@ class DecoderCell(nn.Module):
             gen_input = torch.cat([con_output, ext_input_step], dim=1)
         else:
             # If no controller is being used, can still provide ext inputs
-            gen_input = ext_input_step
+            gen_input = input
         # compute and store the next
         gen_state = self.gen_cell(gen_input, gen_state)
         gen_state_drop = self.dropout(gen_state)

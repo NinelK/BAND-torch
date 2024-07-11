@@ -1,3 +1,5 @@
+from glob import glob
+
 import h5py
 import numpy as np
 import pytorch_lightning as pl
@@ -134,7 +136,7 @@ class SessionDataset(Dataset):
 class BasicDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        data_paths: list[str],
+        datafile_pattern: str,
         batch_keys: list[str] = [],
         attr_keys: list[str] = [],
         batch_size: int = 64,
@@ -143,6 +145,7 @@ class BasicDataModule(pl.LightningDataModule):
         sv_rate: float = 0.0,
         sv_seed: int = 0,
         dm_ic_enc_seq_len: int = 0,
+        fold: int = None
     ):
         assert (
             reshuffle_tv_seed is None or len(attr_keys) == 0
@@ -153,7 +156,11 @@ class BasicDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         hps = self.hparams
         data_dicts = []
-        for data_path in hps.data_paths:
+        if hps.fold is not None:
+            hps.datafile_pattern = hps.datafile_pattern.replace(".h5", f"_cv{hps.fold}.h5")
+            print(hps.datafile_pattern)
+        data_paths = sorted(glob(hps.datafile_pattern))
+        for data_path in data_paths:
             # Load data arrays from the file
             with h5py.File(data_path, "r") as h5file:
                 data_dict = {k: v[()] for k, v in h5file.items()}

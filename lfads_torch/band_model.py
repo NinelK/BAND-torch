@@ -81,7 +81,7 @@ class BAND(pl.LightningModule):
         # Store `co_prior` on `hparams` so it can be accessed in decoder
         self.hparams.co_prior = co_prior
         # Make sure the nn.ModuleList arguments are all the same length
-        assert len(readin) == len(readout) == len(reconstruction)
+        assert len(readin) == len(readout) == len(reconstruction), (len(readin), len(readout), len(reconstruction))
         # Make sure that non-variational models use null priors
         if not variational:
             assert isinstance(ic_prior, Null) and isinstance(co_prior, Null)
@@ -145,7 +145,7 @@ class BAND(pl.LightningModule):
         factors = torch.split(factors, batch_sizes)
         output_params = [self.readout[s](f) for s, f in zip(sessions, factors)]
         output_behavior_params = [
-            self.behavior_readout[s](f) for s, f in zip(sessions, factors)
+            self.behavior_readout(f) for f in factors
         ]
         # Separate parameters of the output distribution
         output_params = [

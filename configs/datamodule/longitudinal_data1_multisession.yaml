@@ -1,0 +1,17 @@
+_target_: lfads_torch.band_datamodules.BasicDataModule
+datafile_pattern: ${relpath:datasets/longitudinal_data1_*.h5}
+batch_keys:
+  - behavior
+attr_keys:
+  - train_day
+  - valid_day
+  - train_session
+  - valid_session
+  - train_pos
+  - valid_pos
+  - train_vel
+  - valid_vel
+  - train_target_direction
+  - valid_target_direction
+batch_size: 1430
+sv_seed: 0

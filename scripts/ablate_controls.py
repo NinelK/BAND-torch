@@ -1,11 +1,13 @@
-from lfads_torch.post_run.band_analysis import run_posterior_sampling
 import torch
 from hydra.utils import instantiate
 from pathlib import Path
 import hydra
 import os
+import sys
+from glob import glob
 
-from lfads_torch.utils import flatten
+from lfads_torch.band_utils import flatten
+from lfads_torch.post_run.band_analysis import run_posterior_sampling
 
 from omegaconf import OmegaConf
 
@@ -15,19 +17,36 @@ OmegaConf.register_new_resolver(
     "relpath", lambda p: str(Path(f'{parent_path}/scripts/').parent / p)
 )
 
-dataset_name = 'chewie_10_07'
+MODEL_STR = sys.argv[1]
+DATASET_STR = sys.argv[2]
 PATH = parent_path + '/datasets'
 
-best_model_dest = f"{parent_path}/runs/band-torch-kl/{dataset_name}"
+# best_model_dest = f"{parent_path}/runs/band-paper/{DATASET_STR}"
+best_model_dest = f"{parent_path}/runs/pbt-band-paper/{DATASET_STR}"
 
-model_name = '240201_134408_band_40f_kl1_student'
+fold = None
+if '_cv' in DATASET_STR:
+    dataset_name, fold = DATASET_STR.split('_cv')
+    print('CV fold: ',fold)
+
+model_name = sys.argv[3]
 model_dest = f"{best_model_dest}/{model_name}"
 
+encod_seq_len = sys.argv[4]
 overrides={
         "datamodule": dataset_name,
-        "model": dataset_name
+        "model": MODEL_STR, #dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model.encod_seq_len": encod_seq_len,
+        "model.recon_seq_len": encod_seq_len,
+        "model.fac_dim": sys.argv[5],
+        "model.co_dim": sys.argv[6],
+        "model.encod_data_dim": sys.argv[7],
+        "model.behavior_weight": sys.argv[8],
+        # "seed": sys.argv[7]
     }
-config_path="../configs/single.yaml"
+if fold is not None:
+    overrides["datamodule.fold"] = fold
+config_path="../configs/pbt.yaml"
 print(config_path)
 
 # Compose the train config with properly formatted overrides
@@ -44,7 +63,10 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+# ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
+# check the latest checkpoint
+checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
+ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 
@@ -55,9 +77,19 @@ B[len(B) // 2:] = -10 # making variance exp(-10)
 model.decoder.rnn.cell.co_linear.weight = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.co_linear.weight))
 model.decoder.rnn.cell.co_linear.bias = torch.nn.Parameter(B)
 
-filename = 'lfads_ablated_output.h5' # if model_dest + '*.h5' -- still puts in the same directory, I DON'T KNOW WHY
-run_posterior_sampling(model, datamodule, filename, num_samples=50)
+filename_source = f'lfads_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- 
+#TODO fix the issue that run_posterior_sampling still puts the file the same directory, ignoring the path, I DON'T KNOW WHY
+# current workaround: give the file a unique name (to avoid clashes between parallel runs) and then copy -\__o_O__/-
+data_paths = sorted(glob(datamodule.hparams.datafile_pattern))
+# Give each session a unique file path
+for s in range(len(data_paths)):
+    session = data_paths[s].split("/")[-1].split("_")[-1].split(".")[0]
+    if fold is not None:
+        session = f'cv{fold}'
+    filename = f'lfads_ablated_output_{session}.h5' # if model_dest + '*.h5'
+    run_posterior_sampling(model, datamodule, filename_source, num_samples=50)
 
-# placing the output file in the right folder, assuming recording had a single session
-filename = filename.split('.')[0] + '_sess0.h5'
-os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
+    # placing the output file in the right folder, assuming recording had a single session
+    filename_source = filename_source.split('.')[0] + f'_{session}.h5'
+    # os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
+    os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)

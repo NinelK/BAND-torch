@@ -4,17 +4,48 @@ import torch
 from torch.nn.functional import poisson_nll_loss
 from torchmetrics import Metric
 
+import numpy as np
+
 
 def r2_score(preds, targets):
+    '''
+    Computes an isotropic R2 metric
+    (almost like a classic anisotropic one, but isotropic)
+    '''
     if preds.ndim > 2:
         preds = preds.reshape(-1, preds.shape[-1])
     if targets.ndim > 2:
         targets = targets.reshape(-1, targets.shape[-1])
-    target_mean = torch.mean(targets, dim=0)
-    ss_tot = torch.sum((targets - target_mean) ** 2, dim=0)
-    ss_res = torch.sum((targets - preds) ** 2, dim=0)
-    return torch.mean(1 - ss_res / ss_tot)
+    if type(preds) == torch.Tensor:
+        target_mean = torch.mean(targets, dim=0)
+        ss_tot = torch.sum((targets - target_mean) ** 2, dim=0)
+        ss_res = torch.sum((targets - preds) ** 2, dim=0)
+        return torch.mean(1 - ss_res / ss_tot)
+    elif type(preds) == np.ndarray:
+        target_mean = np.mean(targets, axis=0)
+        ss_tot = np.sum((targets - target_mean) ** 2, axis=0)
+        ss_res = np.sum((targets - preds) ** 2, axis=0)
+        return np.mean(1 - ss_res / ss_tot)
 
+def r2_UIVE(preds, targets, dir_index):
+    '''
+    UnInstructed Variance Explained for reaches to 8 directions
+    '''
+    assert np.allclose(np.arange(8),np.unique(dir_index))
+    avg_vel = [np.mean(targets[dir_index==d], axis=0) for d in range(8)]
+    total_var = [np.sum((targets[dir_index==d] - avg_vel[d])**2) for d in range(8)]
+    expl_var  = [np.sum((preds[dir_index==d] - targets[dir_index==d])**2) for d in range(8)] 
+    if np.allclose(total_var,0) & np.allclose(expl_var,0):
+        R2_UIVE = 0
+    else:
+        for d in range(8):
+            if total_var[d] == 0:
+                total_var[d] = np.nan
+        r2_uive = [1 - expl_var[d] / total_var[d] for d in range(8)]
+        R2_UIVE = np.nanmean(r2_uive)
+        if np.any(r2_uive) == np.nan:
+            print('Warning: Some directions have no variance in the data: ',np.isnan(np.array(r2_uive)))
+    return R2_UIVE
 
 def bits_per_spike(preds, targets):
     """

@@ -1,6 +1,5 @@
 _target_: lfads_torch.band_datamodules.BasicDataModule
-data_paths:
-  - ${relpath:datasets/Jango_20140820_WB_004_neural_5ms_cvs1.h5}
+datafile_pattern: ${relpath:datasets/Jango_20140820_WB_004_neural_5ms_cvs1.h5}
 batch_keys:
   - behavior
 attr_keys:
