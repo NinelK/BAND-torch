@@ -6,7 +6,7 @@ import os
 import sys
 from glob import glob
 
-from lfads_torch.utils import flatten
+from lfads_torch.band_utils import flatten
 from lfads_torch.post_run.band_analysis import run_posterior_sampling
 
 from omegaconf import OmegaConf

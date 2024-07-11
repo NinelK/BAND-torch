@@ -21,7 +21,7 @@ from pathlib import Path
 import hydra
 import sys
 
-from lfads_torch.utils import flatten
+from lfads_torch.band_utils import flatten
 
 name_translation = {
     'chewie_09_15': 'Chewie_CO_FF_2016-09-15',

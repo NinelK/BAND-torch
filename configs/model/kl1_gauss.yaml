@@ -88,8 +88,8 @@ l2_gen_scale: 0.0 # sampled
 l2_con_scale: 0.0 # sampled
 kl_start_epoch: 0
 kl_increase_epoch: 500
-kl_ic_scale: 1. # sampled
-kl_co_scale: 100. # sampled
+kl_ic_scale: 1. 
+kl_co_scale: 100. 
 kl_ic_target: 0.
 kl_co_target: 0.
 
