@@ -301,6 +301,8 @@ class BAND(pl.LightningModule):
             + l2_ramp * l2
             + kl_ramp * (ic_kl_scaled + co_kl_scaled)
         )
+        # pbt target
+        pbt_target = hps.loss_scale * (recon + self.hparams.behavior_weight * behavior_recon)
         # Compute the reconstruction accuracy, if applicable
         if batch[0].truth.numel() > 0:
             output_means = [
@@ -316,6 +318,18 @@ class BAND(pl.LightningModule):
             )
         else:
             r2 = float("nan")
+
+        # behavior r2
+        beh_r2 = torch.mean(
+            torch.stack(
+                [
+                    r2_score(output[s].output_behavior_params[:, : batch[s].behavior.shape[1]], 
+                             batch[s].behavior)
+                    for s in sessions
+                ]
+            )
+        )
+        
         # Compute batch sizes for logging
         batch_sizes = [len(batch[s].encod_data) for s in sessions]
         # Log per-session metrics
@@ -330,12 +344,14 @@ class BAND(pl.LightningModule):
         # Collect metrics for logging
         metrics = {
             f"{split}/loss": loss,
+            f"{split}/pbt_target": pbt_target,
             f"{split}/recon": recon,
             f"{split}/beh_recon": behavior_recon,
             f"{split}/bps": max(bps, -1.0),
             f"{split}/co_bps": max(co_bps, -1.0),
             f"{split}/fp_bps": max(fp_bps, -1.0),
             f"{split}/r2": r2,
+            f"{split}/beh_r2": beh_r2,
             f"{split}/wt_l2": l2,
             f"{split}/wt_l2/ramp": l2_ramp,
             f"{split}/wt_kl": ic_kl + co_kl,

@@ -17,7 +17,7 @@ from lfads_torch.extensions.tune import (
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
-PROJECT_STR = "pbt-band-paper"
+PROJECT_STR = "band-paper"
 MODEL_STR = sys.argv[1]
 DATASET_STR = sys.argv[2]
 RUN_TAG = sys.argv[3]
@@ -43,8 +43,8 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.l2_gen_scale": HyperParam(1e-3, 1e-0, explore_wt=0.2, enforce_limits=True),
-    "model.l2_con_scale": HyperParam(1e-2, 1e-0, explore_wt=0.2, enforce_limits=True),
+    "model.l2_gen_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
+    "model.l2_con_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
 }
 # ------------------------------
 
@@ -78,7 +78,7 @@ RUN_DIR.mkdir(parents=True)
 shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Run the hyperparameter search
 # metric = "valid/recon_smth"
-metric = "valid/loss"
+metric = "valid/pbt_target"
 num_trials = 20
 perturbation_interval = 25
 burn_in_period = 80 + 25

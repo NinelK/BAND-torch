@@ -17,32 +17,32 @@ OmegaConf.register_new_resolver(
     "relpath", lambda p: str(Path(f'{parent_path}/scripts/').parent / p)
 )
 
-MODEL_STR = sys.argv[1]
-DATASET_STR = sys.argv[2]
+PROJECT_STR = sys.argv[1]
+MODEL_STR = sys.argv[2]
+DATASET_STR = sys.argv[3]
 PATH = parent_path + '/datasets'
 
 # best_model_dest = f"{parent_path}/runs/band-paper/{DATASET_STR}"
-best_model_dest = f"{parent_path}/runs/pbt-band-paper/{DATASET_STR}"
+best_model_dest = f"{parent_path}/runs/{PROJECT_STR}/{DATASET_STR}"
 
 fold = None
 if '_cv' in DATASET_STR:
     dataset_name, fold = DATASET_STR.split('_cv')
     print('CV fold: ',fold)
 
-model_name = sys.argv[3]
+model_name = sys.argv[4]
 model_dest = f"{best_model_dest}/{model_name}"
 
-encod_seq_len = sys.argv[4]
+encod_seq_len = sys.argv[5]
 overrides={
         "datamodule": dataset_name,
         "model": MODEL_STR, #dataset_name.replace('_M1', '').replace('_PMd',''),
         "model.encod_seq_len": encod_seq_len,
         "model.recon_seq_len": encod_seq_len,
-        "model.fac_dim": sys.argv[5],
-        "model.co_dim": sys.argv[6],
-        "model.encod_data_dim": sys.argv[7],
-        "model.behavior_weight": sys.argv[8],
-        # "seed": sys.argv[7]
+        "model.fac_dim": sys.argv[6],
+        "model.co_dim": sys.argv[7],
+        "model.encod_data_dim": sys.argv[8],
+        "model.behavior_weight": sys.argv[9],
     }
 if fold is not None:
     overrides["datamodule.fold"] = fold

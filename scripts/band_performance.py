@@ -137,17 +137,18 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
 
 OLD = False
 
-MODEL_STR = sys.argv[1]
-DATASET_STR = sys.argv[2] #'chewie_10_07'
+PROJECT_STR = sys.argv[1]
+MODEL_STR = sys.argv[2]
+DATASET_STR = sys.argv[3] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
 PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
 
 # best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/band-paper/{DATASET_STR}/"
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-band-paper/{DATASET_STR}/"
+best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/{PROJECT_STR}/{DATASET_STR}/"
 # best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/pbt-longitudinal/{DATASET_STR}/"
 # import glob
 # for model_dest in glob.glob(f"{best_model_dest}/*")[::-1]:
-model_name = sys.argv[3]
+model_name = sys.argv[4]
 model_dest = f"{best_model_dest}/{model_name}"
 
 fold = None
@@ -158,22 +159,21 @@ else:
     dataset_name = DATASET_STR
 
 # Load model
-encod_seq_len = sys.argv[4]
+encod_seq_len = sys.argv[5]
 overrides={
         "datamodule": dataset_name,
         "model": MODEL_STR+("_old" if OLD else ""), #dataset_name.replace('_M1', '').replace('_PMd',''),
         "model.encod_seq_len": encod_seq_len,
         "model.recon_seq_len": encod_seq_len,
-        "model.fac_dim": sys.argv[5],
-        "model.co_dim": sys.argv[6],
-        "model.encod_data_dim": sys.argv[7],
-        "model.behavior_weight": sys.argv[8],
-        # "seed": sys.argv[7]
+        "model.fac_dim": sys.argv[6],
+        "model.co_dim": sys.argv[7],
+        "model.encod_data_dim": sys.argv[8],
+        "model.behavior_weight": sys.argv[9],
     }
 if fold is not None:
     overrides["datamodule.fold"] = fold
 config_path="../configs/pbt.yaml"
-co_dim = int(sys.argv[6])
+co_dim = int(sys.argv[7])
 
 # Compose the train config with properly formatted overrides
 config_path = Path(config_path)
