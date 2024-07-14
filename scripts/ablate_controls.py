@@ -63,11 +63,13 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-# ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
-# check the latest checkpoint
-checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
-ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
-model.load_state_dict(torch.load(ckpt_path)["state_dict"])
+if 'pbt' in PROJECT_STR:
+    # check the latest checkpoint
+    checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
+    ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
+    model.load_state_dict(torch.load(ckpt_path)["state_dict"])
+else:
+    ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
 
 
 model.eval()
@@ -91,5 +93,7 @@ for s in range(len(data_paths)):
 
     # placing the output file in the right folder, assuming recording had a single session
     filename_source = filename_source.split('.')[0] + f'_{session}.h5'
-    # os.replace(parent_path + '/' + filename, model_dest + '/' + filename)
-    os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)
+    if 'pbt' in PROJECT_STR:
+        os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)
+    else:
+        os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)

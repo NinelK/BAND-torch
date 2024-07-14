@@ -1,4 +1,4 @@
-model=kl1_gauss_pbtt
+model=kl1_gauss_pbtt_r2
 fac_dim=8
 co_dim=4
 bw=0.1 # band bw

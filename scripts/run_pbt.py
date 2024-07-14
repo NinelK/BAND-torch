@@ -17,7 +17,7 @@ from lfads_torch.extensions.tune import (
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
-PROJECT_STR = "band-paper"
+PROJECT_STR = "pbt-band-paper"
 MODEL_STR = sys.argv[1]
 DATASET_STR = sys.argv[2]
 RUN_TAG = sys.argv[3]
@@ -45,6 +45,7 @@ HYPERPARAM_SPACE = {
     ),
     "model.l2_gen_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
     "model.l2_con_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
+    "model.behavior_weight": HyperParam(1e-2, 1e-0, explore_wt=0.2),
 }
 # ------------------------------
 
@@ -68,7 +69,7 @@ mandatory_overrides = {
     "model.fac_dim": fac_dim,
     "model.co_dim": co_dim,
     "model.encod_data_dim": sys.argv[7],
-    "model.behavior_weight": sys.argv[8],
+    # "model.behavior_weight": sys.argv[8],
 }
 if fold is not None:
     mandatory_overrides["datamodule.fold"] = fold

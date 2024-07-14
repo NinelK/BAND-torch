@@ -16,7 +16,7 @@ fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
 
 RUN_DIR = Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
-OVERWRITE = True
+OVERWRITE = False
 
 fold = None
 if '_cv' in DATASET_STR:
@@ -59,3 +59,14 @@ run_model(
     overrides=overrides,
     config_path="../configs/single.yaml",
 )
+
+# # if need to re-sample
+# # Switch working directory to this folder (usually handled by tune)
+# ckpt_path = f'{RUN_DIR}/lightning_checkpoints/*.ckpt'
+# print(ckpt_path)
+# run_model(
+#     overrides=overrides,
+#     checkpoint_dir=ckpt_path,
+#     config_path="../configs/single.yaml",
+#     do_train=False,
+# )
