@@ -268,6 +268,10 @@ class BAND(pl.LightningModule):
         bps = torch.mean(torch.stack(sess_bps))
         co_bps = torch.mean(torch.stack(sess_co_bps))
         fp_bps = torch.mean(torch.stack(sess_fp_bps))
+
+        sess_recon_reduce_mean = [ra.mean() for ra in recon_all]
+        recon_reduce_mean = torch.mean(torch.stack(sess_recon_reduce_mean))
+
         # Aggregate the heldout cost for logging
         if not hps.recon_reduce_mean:
             recon_all = [torch.sum(ra, dim=(1, 2)) for ra in recon_all]
@@ -301,8 +305,6 @@ class BAND(pl.LightningModule):
             + l2_ramp * l2
             + kl_ramp * (ic_kl_scaled + co_kl_scaled)
         )
-        # pbt target
-        pbt_target = hps.loss_scale * (recon + self.hparams.behavior_weight * behavior_recon)
         # Compute the reconstruction accuracy, if applicable
         if batch[0].truth.numel() > 0:
             output_means = [
@@ -329,6 +331,12 @@ class BAND(pl.LightningModule):
                 ]
             )
         )
+
+        # pbt target
+        if self.hparams.behavior_weight == 0:
+            pbt_target = recon_reduce_mean
+        else:
+            pbt_target = recon_reduce_mean + (1-beh_r2)
         
         # Compute batch sizes for logging
         batch_sizes = [len(batch[s].encod_data) for s in sessions]
@@ -347,6 +355,7 @@ class BAND(pl.LightningModule):
             f"{split}/pbt_target": pbt_target,
             f"{split}/recon": recon,
             f"{split}/beh_recon": behavior_recon,
+            f"{split}/recon_reduce_mean": recon_reduce_mean,
             f"{split}/bps": max(bps, -1.0),
             f"{split}/co_bps": max(co_bps, -1.0),
             f"{split}/fp_bps": max(fp_bps, -1.0),
