@@ -22,13 +22,14 @@ MODEL_STR = sys.argv[2]
 DATASET_STR = sys.argv[3]
 PATH = parent_path + '/datasets'
 
-# best_model_dest = f"{parent_path}/runs/band-paper/{DATASET_STR}"
 best_model_dest = f"{parent_path}/runs/{PROJECT_STR}/{DATASET_STR}"
 
 fold = None
 if '_cv' in DATASET_STR:
     dataset_name, fold = DATASET_STR.split('_cv')
     print('CV fold: ',fold)
+else:
+    dataset_name = DATASET_STR
 
 model_name = sys.argv[4]
 model_dest = f"{best_model_dest}/{model_name}"
@@ -96,4 +97,4 @@ for s in range(len(data_paths)):
     if 'pbt' in PROJECT_STR:
         os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)
     else:
-        os.replace(parent_path + '/' + filename_source, model_dest + '/best_model/' + filename)
+        os.replace(parent_path + '/' + filename_source, model_dest + '/' + filename)

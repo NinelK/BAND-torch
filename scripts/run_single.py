@@ -34,7 +34,6 @@ shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Switch to the `RUN_DIR` and train the model
 os.chdir(RUN_DIR)
 model_name = DATASET_STR.replace('_M1', '').replace('_PMd','')
-datamodule = DATASET_STR.replace('_small','')
 
 overrides={
         "datamodule": DATASET_STR,
@@ -62,7 +61,7 @@ run_model(
 
 # # if need to re-sample
 # # Switch working directory to this folder (usually handled by tune)
-# ckpt_path = f'{RUN_DIR}/lightning_checkpoints/*.ckpt'
+# ckpt_path = 'lightning_checkpoints'
 # print(ckpt_path)
 # run_model(
 #     overrides=overrides,
