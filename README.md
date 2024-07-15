@@ -44,16 +44,17 @@ create `~/experiments` folder (`~/` is a DFS home)
 
 clone BAND-torch there
 
-pull `*.h5` datasets into `~/BAND-torch/datasets` (from whereever you have them, AFS or another server on the network)
+pull `*.h5` datasets into `~/experiments/BAND-torch/datasets` (from whereever you have them, AFS or another server on the network)
 
-also copy all the relevant configs for these datasets and the models you plan to run (in `~/experiments/BAND/configs`)
+also copy all the relevant configs for these datasets and the models you plan to run (in `~/experiments/BAND-torch/configs`)
   (either on the head node, since only that one has internet on MLP, or in an interactive session)
 
 test if BAND runs:
   1. create an interactive session
   `srun --time=08:00:00 --mem=14000 --cpus-per-task=8 --gres=gpu:4 --pty bash`
+  2. set up a micromamba environment (following the installation guidelines); if no internet connection on allocated server -- set up on the node. I set them up in `~/mamba_envs/` (on DFS).
   2. create `/disk/scratch/{USER}/BAND-torch`
-  3. create `BAND-torch/datasets` and copy relevant datasets there
+  3. create `/disk/scratch/{USER}/BAND-torch/datasets` and copy relevant datasets there
   4. run `python scripts/run_pbt_slurm.py ....` with some relevant attribute (example in any line of `scripts/slurm/experiment.txt`)
   5. don't forget to copy runs back into `~/experiments/BAND-torch/runs/` before closing the session (if you train this until the end want to keep the result)
 
