@@ -105,6 +105,9 @@ src_path=${repo_home}/datasets
 dest_path=${SCRATCH_HOME}/BAND-torch/datasets
 mkdir -p ${dest_path}  # make it if required
 
+# remove old runs if they exist
+rm -rf ${SCRATCH_HOME}/BAND-torch/runs
+
 # Important notes about rsync:
 # * the --compress option is going to compress the data before transfer to send
 #   as a stream. THIS IS IMPORTANT - transferring many files is very very slow
@@ -142,7 +145,7 @@ echo "Command ran successfully!"
 echo "Moving output data back to DFS"
 
 src_path=${SCRATCH_HOME}/BAND-torch/runs
-dest_path=${repo_home}/experiments/runs
+dest_path=${repo_home}/runs
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
 

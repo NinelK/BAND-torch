@@ -43,9 +43,7 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.l2_gen_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
-    "model.l2_con_scale": HyperParam(1e-4, 1e-0, explore_wt=0.2, enforce_limits=True),
-    "model.behavior_weight": HyperParam(1e-2, 1e-1, explore_wt=0.2),
+    "model.behavior_weight": HyperParam(1e-2, 1e-1, explore_wt=0.3),
 }
 # ------------------------------
 
@@ -140,10 +138,10 @@ for arg in sys.argv:
     cmd += ' ' + arg
 os.system(cmd)
 
-cmd = f'python scripts/band_performance.py {PROJECT_STR}'
-for arg in sys.argv:
-    cmd += ' ' + arg
-os.system(cmd)
+# cmd = f'python scripts/band_performance.py {PROJECT_STR}'
+# for arg in sys.argv:
+#     cmd += ' ' + arg
+# os.system(cmd)
 
 # # if need to re-sample
 # # Copy the best model to a new folder so it is easy to identify
