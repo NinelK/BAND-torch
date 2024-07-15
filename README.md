@@ -27,6 +27,46 @@ pre-commit install
 To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this library in your env, e.g.:
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/disk/scratch2/nkudryas/micromamba/envs/band-torch/lib/`
 
+To fix `ImportError: cannot import name 'packaging' from 'pkg_resources'`:
+downgrade setuptools <70:
+`micromamba install setuptools==69.5.1`
+
+To fix `AttributeError: module 'numpy' has no attribute 'bool8'`:
+downgrade numpy < 2
+`pip install numpy==1.26.0 scikit-learn==1.3.0`
+basically, `import sklearn` won't work without these downgrades. Until sklearn can't be imported, BAND will throw confusing hydra-related errors.
+
+# slurm notes
+
+Follow quick [setup guidelines](https://docs.google.com/document/d/1C4x2Ne0lpm4KpfoIPH1_afcQVF_qoW8NWqyIIndUpow/edit)
+
+create `~/experiments` folder (`~/` is a DFS home)
+
+clone BAND-torch there
+
+pull `*.h5` datasets into `~/experiments/BAND-torch/datasets` (from whereever you have them, AFS or another server on the network)
+
+also copy all the relevant configs for these datasets and the models you plan to run (in `~/experiments/BAND-torch/configs`)
+  (either on the head node, since only that one has internet on MLP, or in an interactive session)
+
+test if BAND runs:
+  1. create an interactive session
+  `srun --time=08:00:00 --mem=14000 --cpus-per-task=8 --gres=gpu:4 --pty bash`
+  2. set up a micromamba environment (following the installation guidelines); if no internet connection on allocated server -- set up on the node. I set them up in `~/mamba_envs/` (on DFS).
+  2. create `/disk/scratch/{USER}/BAND-torch`
+  3. create `/disk/scratch/{USER}/BAND-torch/datasets` and copy relevant datasets there
+  4. run `python scripts/run_pbt_slurm.py ....` with some relevant attribute (example in any line of `scripts/slurm/experiment.txt`)
+  5. don't forget to copy runs back into `~/experiments/BAND-torch/runs/` before closing the session (if you train this until the end want to keep the result)
+
+For parallel runs, use:
+`run_experiment -b scripts/slurm/band_arrayjob.sh -e scripts/slurm/experiment.txt`
+
+To use `run_experiment` don't forget to install clusterscripts before, e.g.
+```
+echo 'export PATH=/home/$USER/git/cluster-scripts/experiments:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
 # Note on hyperparameter scaling
 
 1. Switched recon_reduce_mean=False  (True by default). This means that when calculating neural reconstruction, LFADS takes the sum over log_likelihoods over time and neurons. Correct me if I'm wrong, but we are supposed to be treating all data points and neurons as independent observable variables, so the total log-likelihood should be a sum (not mean).

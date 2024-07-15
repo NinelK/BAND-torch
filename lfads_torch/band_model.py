@@ -268,6 +268,10 @@ class BAND(pl.LightningModule):
         bps = torch.mean(torch.stack(sess_bps))
         co_bps = torch.mean(torch.stack(sess_co_bps))
         fp_bps = torch.mean(torch.stack(sess_fp_bps))
+
+        sess_recon_reduce_mean = [ra.mean() for ra in recon_all]
+        recon_reduce_mean = torch.mean(torch.stack(sess_recon_reduce_mean))
+
         # Aggregate the heldout cost for logging
         if not hps.recon_reduce_mean:
             recon_all = [torch.sum(ra, dim=(1, 2)) for ra in recon_all]
@@ -316,6 +320,24 @@ class BAND(pl.LightningModule):
             )
         else:
             r2 = float("nan")
+
+        # behavior r2
+        beh_r2 = torch.mean(
+            torch.stack(
+                [
+                    r2_score(output[s].output_behavior_params[:, : batch[s].behavior.shape[1]], 
+                             batch[s].behavior)
+                    for s in sessions
+                ]
+            )
+        )
+
+        # pbt target
+        if self.hparams.behavior_weight == 0:
+            pbt_target = recon_reduce_mean
+        else:
+            pbt_target = recon_reduce_mean + (1-beh_r2)
+        
         # Compute batch sizes for logging
         batch_sizes = [len(batch[s].encod_data) for s in sessions]
         # Log per-session metrics
@@ -330,12 +352,15 @@ class BAND(pl.LightningModule):
         # Collect metrics for logging
         metrics = {
             f"{split}/loss": loss,
+            f"{split}/pbt_target": pbt_target,
             f"{split}/recon": recon,
             f"{split}/beh_recon": behavior_recon,
+            f"{split}/recon_reduce_mean": recon_reduce_mean,
             f"{split}/bps": max(bps, -1.0),
             f"{split}/co_bps": max(co_bps, -1.0),
             f"{split}/fp_bps": max(fp_bps, -1.0),
             f"{split}/r2": r2,
+            f"{split}/beh_r2": beh_r2,
             f"{split}/wt_l2": l2,
             f"{split}/wt_l2/ramp": l2_ramp,
             f"{split}/wt_kl": ic_kl + co_kl,

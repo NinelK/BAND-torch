@@ -26,7 +26,7 @@ fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
 cpus = 2
 
-RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+RUN_DIR = Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 
 fold = None
 if '_cv' in DATASET_STR:
@@ -43,7 +43,7 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.behavior_weight": HyperParam(1e-2, 1e-0, explore_wt=0.2),
+    "model.behavior_weight": HyperParam(1e-2, 1e-1, explore_wt=0.3),
 }
 # ------------------------------
 
@@ -130,6 +130,18 @@ run_model(
     config_path="../configs/pbt.yaml",
     do_train=False,
 )
+
+os.chdir('/home/nkudryas/experiments/BAND-torch/')
+
+cmd = f'python scripts/ablate_controls.py {PROJECT_STR}'
+for arg in sys.argv:
+    cmd += ' ' + arg
+os.system(cmd)
+
+# cmd = f'python scripts/band_performance.py {PROJECT_STR}'
+# for arg in sys.argv:
+#     cmd += ' ' + arg
+# os.system(cmd)
 
 # # if need to re-sample
 # # Copy the best model to a new folder so it is easy to identify

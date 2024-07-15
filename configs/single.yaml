@@ -55,7 +55,7 @@ logger:
       - null # Overwrite with RUN_TAG in the run script
 
 posterior_sampling:
-  use_best_ckpt: True
+  use_best_ckpt: False
   fn:
     _target_: lfads_torch.post_run.band_analysis.run_posterior_sampling
     filename: lfads_output.h5
