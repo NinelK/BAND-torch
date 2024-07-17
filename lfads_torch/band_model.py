@@ -252,7 +252,7 @@ class BAND(pl.LightningModule):
         recon_all = [
             aug_stack.process_losses(ra, batch[s], self.log, split)
             for ra, s in zip(recon_all, sessions)
-        ]  # NINA Check what's going on here
+        ]
         # Compute bits per spike
         sess_bps, sess_co_bps, sess_fp_bps = transpose_lists(
             [

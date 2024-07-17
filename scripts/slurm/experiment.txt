@@ -1,5 +1,5 @@
-python scripts/run_pbt_slurm.py kl1_gauss_pbtt_r2 chewie_10_07_cv0 band_both_8f_kl1_gauss_pbtt_r2 101 8 4 207 0.1
-python scripts/run_pbt_slurm.py kl1_gauss_pbtt_r2 chewie_10_07_cv1 band_both_8f_kl1_gauss_pbtt_r2 101 8 4 207 0.1
-python scripts/run_pbt_slurm.py kl1_gauss_pbtt_r2 chewie_10_07_cv2 band_both_8f_kl1_gauss_pbtt_r2 101 8 4 207 0.1
-python scripts/run_pbt_slurm.py kl1_gauss_pbtt_r2 chewie_10_07_cv3 band_both_8f_kl1_gauss_pbtt_r2 101 8 4 207 0.1
-python scripts/run_pbt_slurm.py kl1_gauss_pbtt_r2 chewie_10_07_cv4 band_both_8f_kl1_gauss_pbtt_r2 101 8 4 207 0.1
+python scripts/run_single_slurm.py fixKLL2_v5 chewie_10_07_cv0 band_both_8f_fixKLL2_v5_rerun 101 8 2 207
+python scripts/run_single_slurm.py fixKLL2_v5 chewie_10_07_cv1 band_both_8f_fixKLL2_v5_rerun 101 8 2 207
+python scripts/run_single_slurm.py fixKLL2_v5 chewie_10_07_cv2 band_both_8f_fixKLL2_v5_rerun 101 8 2 207
+python scripts/run_single_slurm.py fixKLL2_v5 chewie_10_07_cv3 band_both_8f_fixKLL2_v5_rerun 101 8 2 207
+python scripts/run_single_slurm.py fixKLL2_v5 chewie_10_07_cv4 band_both_8f_fixKLL2_v5_rerun 101 8 2 207

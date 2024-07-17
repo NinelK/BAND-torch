@@ -10,10 +10,9 @@ SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/BAND_torch/datasets'
 
-model='kl1_gauss_pbtt_r2'
+model='fixKLL2_v5'
 fac_dim=8
-co_dim=4
-bw=0.1 # band bw
+co_dim=2
 
 dataset='chewie_10_07'
 n_all=207
@@ -21,7 +20,8 @@ n_m1=70
 n_pmd=137
 T=101
 
-call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} band_both_{fac_dim}f_{model} {T} {fac_dim} {co_dim} {n_all} {bw}'
+#call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} band_both_{fac_dim}f_{model} {T} {fac_dim} {co_dim} {n_all}'
+call = lambda fold: f'python scripts/run_single_slurm.py {model} {dataset}_cv{fold} band_both_{fac_dim}f_{model}_rerun {T} {fac_dim} {co_dim} {n_all}'
 
 folds = range(5)
 
@@ -33,7 +33,7 @@ avg_expt_time = 4*60  # mins
 print(f'Total experiments = {nr_expts}')
 print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
-output_file = open("experiment.txt", "w")
+output_file = open("./scripts/slurm/experiment.txt", "w")
 
 for fold in settings:   
     # Note that we don't set a seed for rep - a seed is selected at random
