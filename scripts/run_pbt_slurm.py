@@ -43,7 +43,7 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.behavior_weight": HyperParam(1e-2, 1e-1, explore_wt=0.3),
+    "model.behavior_weight": HyperParam(1e-2, 1e-1, explore_wt=0.2),
 }
 # ------------------------------
 
@@ -67,7 +67,6 @@ mandatory_overrides = {
     "model.fac_dim": fac_dim,
     "model.co_dim": co_dim,
     "model.encod_data_dim": sys.argv[7],
-    # "model.behavior_weight": sys.argv[8],
 }
 if fold is not None:
     mandatory_overrides["datamodule.fold"] = fold
@@ -134,7 +133,7 @@ run_model(
 os.chdir('/home/nkudryas/experiments/BAND-torch/')
 
 cmd = f'python scripts/ablate_controls.py {PROJECT_STR}'
-for arg in sys.argv:
+for arg in sys.argv[1:]:
     cmd += ' ' + arg
 os.system(cmd)
 
