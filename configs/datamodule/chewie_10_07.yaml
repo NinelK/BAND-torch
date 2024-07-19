@@ -1,6 +1,6 @@
 _target_: lfads_torch.band_datamodules.BasicDataModule
 datafile_pattern: ${relpath:datasets/Chewie_CO_FF_2016-10-07_session_vel_all_spikes_go.h5}
-fold: None
+fold: !!null
 batch_keys:
   - behavior
 attr_keys:
