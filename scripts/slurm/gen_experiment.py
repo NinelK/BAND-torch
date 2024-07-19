@@ -21,9 +21,9 @@ n_m1=70
 n_pmd=137
 T=101
 
-call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
+#call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
 #call = lambda fold: f'python scripts/run_autolfads_pbt_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
-#call = lambda fold: f'python scripts/run_single_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
+call = lambda fold: f'python scripts/run_single_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
 
 folds = range(5)
 

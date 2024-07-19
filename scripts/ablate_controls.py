@@ -43,10 +43,14 @@ overrides={
         "model.fac_dim": sys.argv[6],
         "model.co_dim": sys.argv[7],
         "model.encod_data_dim": sys.argv[8],
-        "model.behavior_weight": sys.argv[9],
     }
 if fold is not None:
     overrides["datamodule.fold"] = fold
+
+if 'lfads' in RUN_TAG:
+    overrides["model.behavior_weight"] = 0.
+    print('Zeroed out behavior weight to emulate LFADS')
+
 config_path="../configs/pbt.yaml"
 print(config_path)
 

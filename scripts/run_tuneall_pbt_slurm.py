@@ -51,7 +51,10 @@ HYPERPARAM_SPACE = {
 }
 if 'band' in RUN_TAG:
     HYPERPARAM_SPACE["model.behavior_weight"] = HyperParam(1e-2, 1e-1, explore_wt=0.2)
-    print('Tune BAND weight too')
+    HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
+        0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
+
+    print('Tune BAND weight and dropout too')
 
 # ------------------------------
 

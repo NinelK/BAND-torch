@@ -47,9 +47,12 @@ overrides={
         "model.fac_dim": fac_dim,
         "model.co_dim": co_dim,
         "model.encod_data_dim": sys.argv[7],
-        "model.behavior_weight": sys.argv[8],
         
     }
+
+if 'lfads' in RUN_TAG:
+    overrides["model.behavior_weight"] = 0.
+    print('Zeroed out behavior weight to emulate LFADS')
 
 if fold is not None:
     overrides["datamodule.fold"] = fold

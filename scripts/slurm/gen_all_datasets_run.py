@@ -10,7 +10,7 @@ SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/BAND_torch/datasets'
 
-model='kl1_gauss_pbtt_r2'
+model='kl1_gauss_bd'
 fac_dim=100
 co_dim=4
 
@@ -29,11 +29,12 @@ avg_expt_time = 3*60  # mins
 print(f'Total experiments = {nr_expts}')
 print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
-output_file = open("experiment_across_datasets.txt", "w")
+output_file = open("scripts/slurm/experiment_across_datasets.txt", "w")
 
 for dataset in n_all:
-    print(f'python scripts/run_pbt_slurm.py {model} {dataset} band_both_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_all[dataset]}', file=output_file)
-    print(f'python scripts/run_pbt_slurm.py {model} {dataset}_M1 band_M1_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_m1[dataset]}', file=output_file)
-    print(f'python scripts/run_pbt_slurm.py {model} {dataset}_PMd band_PMd_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_pmd[dataset]}', file=output_file)
+  for model_name, bw in zip(['lfads','band'],[0,0.1]):
+    print(f'python scripts/run_pbt_slurm.py {model} {dataset} {model_name}_both_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_all[dataset]} {bw}', file=output_file)
+    print(f'python scripts/run_pbt_slurm.py {model} {dataset}_M1 {model_name}_M1_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_m1[dataset]} {bw}', file=output_file)
+    print(f'python scripts/run_pbt_slurm.py {model} {dataset}_PMd {model_name}_PMd_{fac_dim}f_{model} {T[dataset]} {fac_dim} {co_dim} {n_pmd[dataset]} {bw}', file=output_file)
 
 output_file.close()
