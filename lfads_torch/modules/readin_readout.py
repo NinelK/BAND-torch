@@ -21,10 +21,12 @@ class FanInSeq2Seq(nn.Module):
         in_features: int,
         out_features: int,
         time_features: int,
+        dropout_rate: float = 0.,
     ):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Flatten(),
+            nn.Dropout(dropout_rate),
             nn.Linear(in_features * time_features, out_features * time_features),
             nn.Unflatten(1, (time_features, out_features)),
         )

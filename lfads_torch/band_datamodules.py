@@ -157,9 +157,9 @@ class BasicDataModule(pl.LightningDataModule):
         hps = self.hparams
         data_dicts = []
         if hps.fold is not None:
-            hps.datafile_pattern = hps.datafile_pattern.replace(f"_cv{hps.fold}.h5","") # remove if already there, avoide adding twice (e.g. run + sampling)
+            hps.datafile_pattern = hps.datafile_pattern.replace(f"_cv{hps.fold}.h5",".h5") # remove if already there, avoide adding twice (e.g. run + sampling)
             hps.datafile_pattern = hps.datafile_pattern.replace(".h5", f"_cv{hps.fold}.h5")
-            print(hps.datafile_pattern)
+        print(hps.datafile_pattern)
         data_paths = sorted(glob(hps.datafile_pattern))
         for data_path in data_paths:
             # Load data arrays from the file

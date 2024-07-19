@@ -1,7 +1,7 @@
 from omegaconf import OmegaConf
 
 OmegaConf.register_new_resolver(
-    "relpath", lambda p: str(Path('/disk/scratch2/nkudryas/BAND-torch/scripts/').parent / p)
+    "relpath", lambda p: str(Path('/disk/scratch/nkudryas/BAND-torch/scripts/').parent / p)
 ) # this is required for hydra to find the config files
 
 import matplotlib.pyplot as plt
@@ -141,9 +141,9 @@ PROJECT_STR = sys.argv[1]
 MODEL_STR = sys.argv[2]
 DATASET_STR = sys.argv[3] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
-PATH = 'f"/disk/scratch2/nkudryas/BAND-torch/datasets'
+PATH = 'f"/disk/scratch/nkudryas/BAND-torch/datasets'
 
-best_model_dest = f"/disk/scratch2/nkudryas/BAND-torch/runs/{PROJECT_STR}/{DATASET_STR}/"
+best_model_dest = f"/disk/scratch/nkudryas/BAND-torch/runs/{PROJECT_STR}/{DATASET_STR}/"
 model_name = sys.argv[4]
 model_dest = f"{best_model_dest}/{model_name}"
 
