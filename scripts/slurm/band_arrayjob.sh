@@ -143,8 +143,8 @@ echo "Command ran successfully!"
 # example, send it back to the DFS with rsync
 
 # clean up heavy temp files first
-rm -r ${SCRATCH_HOME}/BAND_torch/runs/*/*/*/run_model_*
-rm ${SCRATCH_HOME}/BAND_torch/runs/*/*/*/pbt_policy_*
+rm -rf ${SCRATCH_HOME}/BAND-torch/runs/*/*/*/run_model_*
+rm -f ${SCRATCH_HOME}/BAND-torch/runs/*/*/*/pbt_policy_*
 
 echo "Moving output data back to DFS"
 
