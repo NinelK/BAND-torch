@@ -1,5 +1,6 @@
 _target_: lfads_torch.band_datamodules.BasicDataModule
 datafile_pattern: ${relpath:datasets/area2_bump-05ms-val.h5}
+fold: !!null
 batch_keys:
   - behavior
 attr_keys:
