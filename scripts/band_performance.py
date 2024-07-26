@@ -354,7 +354,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     else:
         in_features = config.model.behavior_readout.in_features
         out_features = config.model.behavior_readout.out_features
-        beh_W = model.behavior_readout.layers[1].weight.T
+        beh_W = model.behavior_readout.layers[2].weight.T
 
     assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
 
@@ -462,6 +462,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     df = pd.DataFrame(R2_results, index=[0])
     df.to_csv(f"{model_dest}/R2_results.csv")
+    print(df)
     
 
     fig.tight_layout()
