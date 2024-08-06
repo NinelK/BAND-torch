@@ -1,0 +1,7 @@
+_target_: lfads_torch.band_datamodules.BasicDataModule
+datafile_pattern: ${relpath:datasets/BCI_train_1024.h5}
+fold: !!null
+batch_keys:
+  - behavior
+batch_size: 202
+sv_seed: 0
