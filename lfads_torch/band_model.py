@@ -105,6 +105,7 @@ class BAND(pl.LightningModule):
         self.co_prior = co_prior
         # Create metric for exponentially-smoothed `valid/recon`
         self.valid_recon_smth = ExpSmoothedMetric(coef=0.3)
+        self.valid_beh_recon_smth = ExpSmoothedMetric(coef=0.3)
         # Store the data augmentation stacks
         self.train_aug_stack = train_aug_stack
         self.infer_aug_stack = infer_aug_stack
@@ -372,14 +373,17 @@ class BAND(pl.LightningModule):
         if split == "valid":
             # Update the smoothed reconstruction loss
             self.valid_recon_smth.update(recon, batch_size)
+            self.valid_beh_recon_smth.update(behavior_recon, batch_size)
             # Add validation-only metrics
             metrics.update(
                 {
                     "valid/recon_smth": self.valid_recon_smth,
+                    "valid/beh_recon_smth": self.valid_beh_recon_smth,
                     "hp_metric": recon,
                     "cur_epoch": float(self.current_epoch),
                 }
             )
+
         # Log overall metrics
         self.log_dict(
             metrics,

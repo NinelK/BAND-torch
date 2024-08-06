@@ -108,6 +108,42 @@ class TemporalShift:
         shifted_data = torch.gather(data, dim=1, index=shifted_indices)
         return shifted_data
 
+class BandRotation:
+    def __init__(self, min_angle=1, max_angle=10):
+        self.min_angle = min_angle
+        self.max_angle = max_angle
+
+    def process_batch(self, batch):
+        encod_data, recon_data, *other_data = batch
+        encod_data = self._rotate_tensor(encod_data)
+        recon_data = self._rotate_tensor(recon_data)
+        return encod_data, recon_data, *other_data
+    
+    def _rotate_tensor(self, data):
+        n_sensors = data.shape[-1]
+        original_angles = torch.linspace(0, 360, steps=n_sensors+1)[:-1]
+
+        signs = torch.randint(0, 2, (n_sensors,), device=data.device) * 2 - 1
+        random_angles = torch.empty(n_sensors, device=data.device).uniform_(self.min_angle, self.max_angle)
+
+        delta_array = signs * random_angles
+        new_angles = original_angles + delta_array
+
+        # Vectorized correction to ensure angles are within the 0-360 degree range
+        new_angles = (new_angles + 360) % 360
+        
+        # Vectorized computation of angular distances for all new angles to all original angles
+        distances = torch.abs(new_angles[:, None] - original_angles)
+        distances = torch.minimum(distances, 360 - distances) / (360 / n_sensors)
+
+        weights = 1 - distances  # Invert distances to get weights
+        weights = torch.clamp(weights, 0, 1)
+
+        rotated_data = torch.matmul(data, weights)
+        
+        return rotated_data
+
+
 
 class CoordinatedDropout:
     def __init__(self, cd_rate, cd_pass_rate, ic_enc_seq_len):

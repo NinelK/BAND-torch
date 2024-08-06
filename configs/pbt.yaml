@@ -28,6 +28,7 @@ callbacks:
     _target_: ray.tune.integration.pytorch_lightning.TuneReportCheckpointCallback
     metrics:
       - valid/recon_smth
+      - valid/beh_recon_smth
       - cur_epoch
       - valid/pbt_target
       - valid/co_bps
@@ -61,7 +62,7 @@ logger:
   #     - null # Overwrite with RUN_TAG in the run script
 
 posterior_sampling:
-  use_best_ckpt: False
+  use_best_ckpt: True
   fn:
     _target_: lfads_torch.post_run.band_analysis.run_posterior_sampling
     filename: lfads_output.h5

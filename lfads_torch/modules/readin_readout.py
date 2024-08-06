@@ -34,6 +34,27 @@ class FanInSeq2Seq(nn.Module):
     def forward(self, x):
         x = self.layers(x)
         return x
+    
+class FanInSeq2Seq_BCI(nn.Module):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        time_features: int,
+        bci_time_features: int,
+        dropout_rate: float = 0.,
+    ):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Flatten(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(in_features * time_features, out_features * bci_time_features),
+            nn.Unflatten(1, (bci_time_features, out_features)),
+        )
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x
 
 
 class _MultisessionModuleList(abc.ABC, nn.ModuleList):
