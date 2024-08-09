@@ -74,12 +74,9 @@ model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 model.eval()
 # zero out weight
-B = torch.zeros_like(model.decoder.rnn.cell.co_linear.bias)
-B[len(B) // 2:] = -10 # making variance exp(-10)
-model.decoder.rnn.cell.co_linear.weight = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.co_linear.weight))
-model.decoder.rnn.cell.co_linear.bias = torch.nn.Parameter(B)
+model.decoder.rnn.cell.gen_cell.weight_ih = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.gen_cell.weight_ih))
 
-filename_source = f'lfads_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- 
+filename_source = f'lfads_W_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- 
 #TODO fix the issue that run_posterior_sampling still puts the file the same directory, ignoring the path, I DON'T KNOW WHY
 # current workaround: give the file a unique name (to avoid clashes between parallel runs) and then copy -\__o_O__/-
 data_path = datamodule.hparams.datafile_pattern
@@ -92,7 +89,7 @@ for s in range(len(data_paths)):
     session = data_paths[s].split("/")[-1].split("_")[-1].split(".")[0]
     if fold is not None:
         session = f'cv{fold}'
-    filename = f'lfads_ablated_output_{session}.h5' # if model_dest + '*.h5'
+    filename = f'lfads_W_ablated_output_{session}.h5' # if model_dest + '*.h5'
     run_posterior_sampling(model, datamodule, filename_source, num_samples=50)
 
     # placing the output file in the right folder, assuming recording had a single session
