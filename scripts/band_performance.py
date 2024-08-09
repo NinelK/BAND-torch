@@ -246,9 +246,9 @@ for sess_id, dataset_filename in enumerate(data_paths):
     if co_dim > 0:
         # load ablated model components
         if 'pbt' in PROJECT_STR:
-            data_path = best_model_dest + model_name + f'/best_model/lfads_ablated_output_{session}.h5'
+            data_path = best_model_dest + model_name + f'/best_model/lfads_W_ablated_output_{session}.h5'
         else:
-            data_path = best_model_dest + model_name + f'/lfads_ablated_output_{session}.h5'
+            data_path = best_model_dest + model_name + f'/lfads_W_ablated_output_{session}.h5'
         with h5py.File(data_path) as f:
             noci_factors = f["valid_factors"][:]
             noci_behavior = f["valid_output_behavior_params"][:]
@@ -338,7 +338,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
         mn = 'band'
     else:
         raise ValueError(f'Unknown model name {model_name}')
-    if short_dataset_name in name_translation:
+    if (short_dataset_name in name_translation) & (fold is None):
         results_path = f'./results/{name_translation[short_dataset_name]}.h5'
         with h5py.File(results_path, 'a') as f:
             save_results(f,area,mn,factors.shape[-1],controls.shape[-1],train_outputs, test_outputs)
