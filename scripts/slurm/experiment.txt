@@ -1,5 +1,5 @@
-python scripts/run_single_slurm.py kl1_gauss_bd chewie_10_07_cv0 band_both_8f_4c_kl1_gauss_bd 101 8 4 207
-python scripts/run_single_slurm.py kl1_gauss_bd chewie_10_07_cv1 band_both_8f_4c_kl1_gauss_bd 101 8 4 207
-python scripts/run_single_slurm.py kl1_gauss_bd chewie_10_07_cv2 band_both_8f_4c_kl1_gauss_bd 101 8 4 207
-python scripts/run_single_slurm.py kl1_gauss_bd chewie_10_07_cv3 band_both_8f_4c_kl1_gauss_bd 101 8 4 207
-python scripts/run_single_slurm.py kl1_gauss_bd chewie_10_07_cv4 band_both_8f_4c_kl1_gauss_bd 101 8 4 207
+python scripts/run_single_slurm.py kl1_gauss_bd05 chewie_10_07_cv0 band_both_100f_4c_kl1_gauss_bd05 101 100 4 207
+python scripts/run_single_slurm.py kl1_gauss_bd05 chewie_10_07_cv1 band_both_100f_4c_kl1_gauss_bd05 101 100 4 207
+python scripts/run_single_slurm.py kl1_gauss_bd05 chewie_10_07_cv2 band_both_100f_4c_kl1_gauss_bd05 101 100 4 207
+python scripts/run_single_slurm.py kl1_gauss_bd05 chewie_10_07_cv3 band_both_100f_4c_kl1_gauss_bd05 101 100 4 207
+python scripts/run_single_slurm.py kl1_gauss_bd05 chewie_10_07_cv4 band_both_100f_4c_kl1_gauss_bd05 101 100 4 207

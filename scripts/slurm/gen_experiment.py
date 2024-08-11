@@ -11,11 +11,11 @@ SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 DATA_HOME = f'{SCRATCH_HOME}/BAND_torch/datasets'
 
 model_name='band'
-model='kl1_gauss_bd'
-fac_dim=8
+model='kl1_gauss_bd_d20_causal_ci'
+fac_dim=100
 co_dim=4
 
-dataset='chewie_10_07'
+dataset='chewie_10_07_mov'
 n_all=207
 n_m1=70
 n_pmd=137
