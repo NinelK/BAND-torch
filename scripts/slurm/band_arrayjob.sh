@@ -106,7 +106,7 @@ dest_path=${SCRATCH_HOME}/BAND-torch/datasets
 mkdir -p ${dest_path}  # make it if required
 
 # remove old runs if they exist
-rm -rf ${SCRATCH_HOME}/BAND-torch/runs
+#rm -rf ${SCRATCH_HOME}/BAND-torch/runs
 
 # Important notes about rsync:
 # * the --compress option is going to compress the data before transfer to send
@@ -141,6 +141,10 @@ echo "Command ran successfully!"
 # ======================================
 # This presumes your command wrote data to some known directory. In this
 # example, send it back to the DFS with rsync
+
+# clean up heavy temp files first
+rm -rf ${SCRATCH_HOME}/BAND-torch/runs/*/*/*/run_model_*
+rm -f ${SCRATCH_HOME}/BAND-torch/runs/*/*/*/pbt_policy_*
 
 echo "Moving output data back to DFS"
 

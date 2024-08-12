@@ -10,18 +10,20 @@ SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/BAND_torch/datasets'
 
-model='fixKLL2_v5'
-fac_dim=8
-co_dim=2
+model_name='band'
+model='kl1_gauss_bd_d20_causal_ci'
+fac_dim=100
+co_dim=4
 
-dataset='chewie_10_07'
+dataset='chewie_10_07_mov'
 n_all=207
 n_m1=70
 n_pmd=137
 T=101
 
-#call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} band_both_{fac_dim}f_{model} {T} {fac_dim} {co_dim} {n_all}'
-call = lambda fold: f'python scripts/run_single_slurm.py {model} {dataset}_cv{fold} band_both_{fac_dim}f_{model}_rerun {T} {fac_dim} {co_dim} {n_all}'
+#call = lambda fold: f'python scripts/run_pbt_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
+#call = lambda fold: f'python scripts/run_autolfads_pbt_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
+call = lambda fold: f'python scripts/run_single_slurm.py {model} {dataset}_cv{fold} {model_name}_both_{fac_dim}f_{co_dim}c_{model} {T} {fac_dim} {co_dim} {n_all}'
 
 folds = range(5)
 

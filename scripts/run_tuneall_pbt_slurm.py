@@ -44,10 +44,13 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
+    "model.kl_co_scale": HyperParam(1e-6, 1e-4, explore_wt=0.8),
+    "model.kl_ic_scale": HyperParam(1e-6, 1e-3, explore_wt=0.8),
+    "model.l2_gen_scale": HyperParam(1e-4, 1e-0, explore_wt=0.8),
+    "model.l2_con_scale": HyperParam(1e-4, 1e-0, explore_wt=0.8),
 }
 if 'band' in RUN_TAG:
     HYPERPARAM_SPACE["model.behavior_weight"] = HyperParam(1e-2, 1e-1, explore_wt=0.2)
-    
     HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
         0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
 

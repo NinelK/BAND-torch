@@ -43,8 +43,16 @@ HYPERPARAM_SPACE = {
     "model.train_aug_stack.transforms.0.cd_rate": HyperParam(
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
-    "model.behavior_weight": HyperParam(1e-2, 1e-0, explore_wt=0.2),
 }
+if 'band' in RUN_TAG:
+    HYPERPARAM_SPACE["model.behavior_weight"] = HyperParam(1e-2, 1e-1, explore_wt=0.2)
+
+    HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
+        0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
+
+    print('Tune BAND weight and dropout too')
+
+
 # ------------------------------
 
 

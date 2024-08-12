@@ -47,6 +47,10 @@ overrides={
         
     }
 
+if 'lfads' in RUN_TAG:
+    overrides["model.behavior_weight"] = 0.
+    print('Zeroed out behavior weight to emulate LFADS')
+
 if fold is not None:
     overrides["datamodule.fold"] = fold
 
@@ -72,4 +76,11 @@ cmd = f'python scripts/ablate_controls.py {PROJECT_STR}'
 for arg in sys.argv[1:]:
     cmd += ' ' + arg
 os.system(cmd)
+
+cmd = f'python scripts/band_performance.py {PROJECT_STR}'
+for arg in sys.argv[1:]:
+    cmd += ' ' + arg
+os.system(cmd)
+
+
 
