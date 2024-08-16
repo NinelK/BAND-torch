@@ -1,13 +1,13 @@
-model=kl1_gauss_bd_d20_causal_ci
-fac_dim=100
+model=kl1_gauss_bd_d20_causal_ci_lowl1
+fac_dim=8
 co_dim=4
 bw=0.1 # band bw #TODO substitute with a binary flag
 
-dataset=chewie_10_07
+dataset=chewie_10_07_mov
 n_all=207
 n_m1=70
 n_pmd=137
-T=101
+T=99 #101
 postfix=
 
 for fold in 0 1 2 3 4

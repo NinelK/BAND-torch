@@ -9,18 +9,18 @@ raw_data_dir = (
 data_save_dir = "./datasets/"
 
 experiments = [
-    "Chewie_CO_FF_2016-09-15.mat",
-    "Chewie_CO_FF_2016-09-21.mat",
-    "Chewie_CO_FF_2016-10-05.mat",
+    # "Chewie_CO_FF_2016-09-15.mat",
+    # "Chewie_CO_FF_2016-09-21.mat",
+    # "Chewie_CO_FF_2016-10-05.mat",
     "Chewie_CO_FF_2016-10-07.mat",  # the best!
     # "Chewie_CO_VR_2016-09-09.mat",
     # "Chewie_CO_VR_2016-09-12.mat",
     # "Chewie_CO_VR_2016-09-14.mat",
     # "Chewie_CO_VR_2016-10-06.mat",
-    "Mihili_CO_FF_2014-02-03.mat",  # *
-    "Mihili_CO_FF_2014-02-17.mat",  # + (only BL)
-    "Mihili_CO_FF_2014-02-18.mat",
-    "Mihili_CO_FF_2014-03-07.mat",
+    # "Mihili_CO_FF_2014-02-03.mat",  # *
+    # "Mihili_CO_FF_2014-02-17.mat",  # + (only BL)
+    # "Mihili_CO_FF_2014-02-18.mat",
+    # "Mihili_CO_FF_2014-03-07.mat",
     # "Mihili_CO_VR_2014-03-03.mat",
     # "Mihili_CO_VR_2014-03-04.mat",
     # "Mihili_CO_VR_2014-03-06.mat",
@@ -28,7 +28,7 @@ experiments = [
 
 trial_dur = None # will be set to the shortest trial duration
 n_folds = 5
-alignment = "go"
+alignment = "mov"
 behaviour_key="vel"
 full_behaviour_key="pos"
 dataset_type = "session" # "BL", "AD", "WO", "session"
@@ -105,7 +105,10 @@ for experiment in experiments:
                     - successful_trials.idx_movement_on
                 ).min()
             )
-            start_key = "idx_movement_on"
+            start_key = "idx_pre_movement_on"
+            # create a new start key 25 bins before movement (+1 bin for controller lag)
+            successful_trials["idx_pre_movement_on"] = successful_trials.idx_movement_on - 25 - 1
+            shortest_trial += 25 + 1
         elif alignment == "go":
             shortest_trial = int(
                 (successful_trials.idx_trial_end - successful_trials.idx_go_cue).min()
