@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 from tqdm import tqdm
 
+from lfads_torch.metrics import r2_score
+
 BIN_SIZE = 0.01 # seconds, i.e. 10ms
 
 experiments = [
@@ -72,12 +74,12 @@ for short_dataset_name in tqdm(experiments):
     assert trial_coverage.all()
     
     mask_test = testQ==1 # evaluate on test
-    R2_vel = 1 - np.sum((vel[mask_test] - avg_vel_per_epoch[mask_test])**2) / np.sum((vel[mask_test] - vel[mask_test].mean(0))**2)        
+    R2_vel = r2_score(avg_vel_per_epoch[mask_test], vel[mask_test])
     summary_dict[short_dataset_name][f'R2_all'] = np.round(R2_vel*100,1) 
 
     for e, epoch_name in enumerate(['BL','AD','WO']):
         mask = (e==epoch) & mask_test
-        R2_vel = 1 - np.sum((vel[mask] - avg_vel_per_epoch[mask])**2) / np.sum((vel[mask] - vel[mask].mean(0))**2)        
+        R2_vel = r2_score(avg_vel_per_epoch[mask], vel[mask])
         summary_dict[short_dataset_name][f'R2_{epoch_name}'] = np.round(R2_vel*100,1) 
 
     # save predictions
