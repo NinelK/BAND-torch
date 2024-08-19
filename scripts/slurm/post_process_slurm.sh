@@ -1,5 +1,5 @@
 model=kl1_gauss_bd_d20_causal_ci_lowl1
-fac_dim=8
+fac_dim=100
 co_dim=4
 bw=0.1 # band bw #TODO substitute with a binary flag
 

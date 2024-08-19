@@ -6,7 +6,8 @@ import torch
 from torch import nn
 import pickle
 
-from lfads_torch.benchmark.biRNN_decoder import Decoder, r2_score
+from lfads_torch.benchmark.biRNN_decoder import Decoder
+from lfads_torch.metrics import r2_score
 from scipy.stats import ttest_ind
 
 BIN_SIZE = 0.01 # seconds, i.e. 10ms

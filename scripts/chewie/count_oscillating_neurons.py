@@ -224,7 +224,7 @@ for spike_data_dir in experiments[:]:
         x = fr_BL[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
-        Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+        Sxx_all = np.sqrt(xf * xf.conj())  # Compute spectrum
 
         Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 
@@ -239,7 +239,7 @@ for spike_data_dir in experiments[:]:
         x = fr[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
-        Sxx_all = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+        Sxx_all = np.sqrt(xf * xf.conj())  # Compute spectrum
 
         Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 

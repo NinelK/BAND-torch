@@ -22,6 +22,7 @@ import hydra
 import sys
 
 from lfads_torch.band_utils import flatten
+from lfads_torch.metrics import r2_score
 
 name_translation = {
     'chewie_09_15': 'Chewie_CO_FF_2016-09-15',
@@ -127,8 +128,8 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
         for a in ax:
             a.axis("off")
 
-    R2_iso_pos = 1 - np.sum((pos - pred_pos) ** 2) / np.sum((pos - pos.mean()) ** 2)
-    R2_iso_vel = 1 - np.sum((vel - pred_vel) ** 2) / np.sum((vel - vel.mean()) ** 2)
+    R2_iso_pos = r2_score(pred_pos, pos)
+    R2_iso_vel = r2_score(pred_vel, vel)
     
     axes[0].text(np.min(pos[...,0]),np.max(pos[...,1]),f'R2_pos = {R2_iso_pos*100:.2f}%')
     ax_vel[0][-1].set_title(f'R2_vel = {R2_iso_vel*100:.2f}%')

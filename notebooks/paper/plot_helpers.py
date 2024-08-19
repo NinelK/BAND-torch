@@ -169,6 +169,9 @@ def plot_beh_pred_per_epoch(vel, pred_vel, dir_index, trials2plot, epochs, compo
     '''
     Plot hand velocity in the 3 epochs (BL/AD/WO)
     '''
+
+    from lfads_torch.metrics import r2_score
+
     if ax_vel is None:
         fig = plt.figure(figsize=(6, 3))
 
@@ -205,8 +208,8 @@ def plot_beh_pred_per_epoch(vel, pred_vel, dir_index, trials2plot, epochs, compo
 
     for e in range(3):
         mask = epochs == e
-        R2_iso_vel = 1 - np.sum((vel[mask] - pred_vel[mask]) ** 2) / np.sum((vel[mask] - vel[mask].mean()) ** 2)
-        ax_vel[e][-1].set_title(f'R2_vel = {R2_iso_vel*100:.2f}%')
+        R2_iso_vel = r2_score(pred_vel[mask],vel[mask]) # isotropic R2
+        ax_vel[e][-1].set_title(r'$R^2_{vel}$ ='+f'{R2_iso_vel*100:.2f}%')
 
     if file_name:
         plt.savefig(file_name)
