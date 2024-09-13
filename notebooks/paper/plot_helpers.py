@@ -226,6 +226,7 @@ def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
             WO_start = np.where(epoch[spike_data_dir]=='WO')[0][0]
 
             V = vel[spike_data_dir][AD_start:WO_start, :] # get data for AD trials, time point 80 onwards
+            T = dt * V.shape[1]
 
             SR = []
             for _ in range(100):
@@ -237,7 +238,7 @@ def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
                     x = V[idxs][...,c]
 
                     xf = fft(x)  # Compute Fourier transform of x
-                    Sxx_all = (xf * xf.conj()).real # Compute power spectrum
+                    Sxx_all = 2 * dt**2 / T * (xf * xf.conj()).real # Compute power spectrum
 
                     Sxx_comp.append(Sxx_all)
                 Sxx_comp = np.array(Sxx_comp) # [components, trials, freqs]
@@ -261,13 +262,13 @@ def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('FFT Amplitude')
         ax.set_title(f'Monkey {m}')
-        ax.set_ylim([0,150])
+        ax.set_ylim([0,2.5])
         ax.set_xlim([0,10])
         ax.legend()
 
 
-    axes[0].arrow(5., 110, 0, -10, color="k", head_width=.2, head_length=5)
-    axes[1].arrow(4., 120, 0, -10, color="k", head_width=.2, head_length=5)
+    axes[0].arrow(5., 1.9, 0, -.2, color="k", head_width=.2, head_length=5)
+    axes[1].arrow(4., 2, 0, -.2, color="k", head_width=.2, head_length=5)
 
 def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, plot='spectrum', peak_freq=5, color=None, vmax=500):
 

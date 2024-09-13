@@ -3,8 +3,8 @@ import h5py
 from tqdm import tqdm
 import PSID # v.1.1.0, before IPSID
 
-n_factors = 40
-n_beh_factors = 20
+n_factors = 100
+n_beh_factors = 40
 
 experiments = [
     "Chewie_CO_FF_2016-09-15",
@@ -74,7 +74,7 @@ for short_dataset_name in tqdm(experiments):
         # mask = data['train_epoch'][:] == 1 # train on the AD epoch only
         model = PSID.PSID(
             [d for d in train_data], [d for d in train_behavior], 
-            n_factors, n_beh_factors, 10
+            n_factors, n_beh_factors, max(10, int(np.ceil(n_beh_factors/2)))
         )
 
         train_outputs =  np.array([model.predict(train_data[trial])[0] for trial in range(train_data.shape[0])])

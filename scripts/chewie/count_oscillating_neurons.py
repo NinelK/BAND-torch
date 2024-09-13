@@ -169,7 +169,7 @@ for spike_data_dir in experiments[:]:
             x = fr[:, :, i] # get the AD spike data for neuron i
 
             xf = fft(x)  # Compute Fourier transform of x
-            Sxx = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+            Sxx = (xf * xf.conj()).real  # Compute spectrum
             Sxx = np.nanmean(Sxx, axis=0)  # trial average per epoch
 
             df = 1 / T  # Determine frequency resolution
@@ -191,7 +191,7 @@ for spike_data_dir in experiments[:]:
             x = fr[:, :, i] # get the AD spike data for neuron i
 
             xf = fft(x)  # Compute Fourier transform of x
-            Sxx = 2 * dt**2 / T * (xf * xf.conj())  # Compute spectrum
+            Sxx = (xf * xf.conj()).real  # Compute spectrum
             Sxx = np.nanmean(Sxx, axis=0)  # trial average per epoch
 
             df = 1 / T  # Determine frequency resolution
@@ -224,7 +224,7 @@ for spike_data_dir in experiments[:]:
         x = fr_BL[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
-        Sxx_all = np.sqrt(xf * xf.conj())  # Compute spectrum
+        Sxx_all = (xf * xf.conj()).real  # Compute spectrum
 
         Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 
@@ -232,14 +232,14 @@ for spike_data_dir in experiments[:]:
         faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
         j5 = np.argmin(np.abs(faxis - 5))
-        power5_BL = Sxx.real[j5]
+        power5_BL = Sxx[j5]
         j4 = np.argmin(np.abs(faxis - 4))
-        power4_BL = Sxx.real[j4]
+        power4_BL = Sxx[j4]
 
         x = fr[:, :, i] # get the AD spike data for neuron i
 
         xf = fft(x)  # Compute Fourier transform of x
-        Sxx_all = np.sqrt(xf * xf.conj())  # Compute spectrum
+        Sxx_all = (xf * xf.conj()).real  # Compute spectrum
 
         Sxx = np.nanmean(Sxx_all, axis=0)  # trial average per epoch
 
@@ -247,9 +247,9 @@ for spike_data_dir in experiments[:]:
         faxis = fftfreq(len(Sxx)) / dt  # Construct frequency axis
 
         j5 = np.argmin(np.abs(faxis - 5))
-        power5 = Sxx.real[j5]
+        power5 = Sxx[j5]
         j4 = np.argmin(np.abs(faxis - 4))
-        power4 = Sxx.real[j4]
+        power4 = Sxx[j4]
 
         thr5_BL = power5_BL_shuffled[:,i].mean() + 4 * power5_BL_shuffled[:,i].std()
         thr5 = power5_shuffled[:,i].mean() + 4 * power5_shuffled[:,i].std()
