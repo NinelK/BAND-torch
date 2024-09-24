@@ -345,6 +345,8 @@ def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, 
         epoch_args['va'] = 'top'
         epoch_y = ax.get_ylim()[1]*0.95
 
+        return trials, SR[...,find_osc].mean(0)
+
     ax.set_xlabel('trials, #')
     ax.set_title(f'Monkey {monkey} (session {session})')
     ax.axvline(AD_start,c='k')
