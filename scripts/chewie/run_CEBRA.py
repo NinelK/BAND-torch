@@ -119,9 +119,11 @@ for short_dataset_name in tqdm(experiments):
         cebra_pos_train = cebra_pos_model.transform(neural_pos_train)
         cebra_pos_test = cebra_pos_model.transform(neural_pos_test)
 
-        # fine-tune n_neighbors
-        n_neighbors = fine_tune_n_neighbors(cebra_pos_train, label_train, cebra_pos_test, label_test)
-        print(f"Fine-tuned n_neighbors: {n_neighbors} for {short_dataset_name} {area}")
+        # # fine-tune n_neighbors (use validation set, then fix)
+        # n_neighbors = fine_tune_n_neighbors(cebra_pos_train, label_train, cebra_pos_test, label_test)
+        # print(f"Fine-tuned n_neighbors: {n_neighbors} for {short_dataset_name} {area}")
+
+        n_neighbors = 400
 
         cebra_pos_decode = decoding_pos(cebra_pos_train, cebra_pos_test, label_train, label_test, n_neighbors=n_neighbors)
         train_outputs = cebra_pos_decode['train_pred'].reshape(train_behavior.shape)
