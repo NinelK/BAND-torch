@@ -357,3 +357,11 @@ def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, 
 
 # FIGURE 4
     
+def class_accuracy(y_train, dir_index_train, y_pred, dir_index):
+    '''
+    Train an LDA classifier to predict the target direction from the predicted velocities.
+    '''
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+    lda = LinearDiscriminantAnalysis()
+    lda.fit(y_train, dir_index_train)
+    return lda.score(y_pred, dir_index)
