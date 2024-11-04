@@ -64,7 +64,7 @@ with hydra.initialize(
 ):
     config = hydra.compose(config_name=config_path.name, overrides=overrides)
 
-# Instantiate `LightningDataModule` and `LightningModule`
+# Instantiate `Light    #ningDataModule` and `LightningModule`
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
@@ -72,28 +72,28 @@ if 'pbt' in PROJECT_STR:
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
     ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
-    model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 else:
     ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
-
+model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 model.eval()
 # zero out weight
-B = torch.zeros_like(model.decoder.rnn.cell.co_linear.bias)
-B[len(B) // 2:] = -10 # making variance exp(-10)
-model.decoder.rnn.cell.co_linear.weight = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.co_linear.weight))
-model.decoder.rnn.cell.co_linear.bias = torch.nn.Parameter(B)
+model.decoder.rnn.cell.gen_cell.weight_ih = torch.nn.Parameter(torch.zeros_like(model.decoder.rnn.cell.gen_cell.weight_ih))
 
-filename_source = f'lfads_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- 
+filename_source = f'lfads_W_ablated_output_{model_name}.h5' # if model_dest + '*.h5' -- 
 #TODO fix the issue that run_posterior_sampling still puts the file the same directory, ignoring the path, I DON'T KNOW WHY
 # current workaround: give the file a unique name (to avoid clashes between parallel runs) and then copy -\__o_O__/-
-data_paths = sorted(glob(datamodule.hparams.datafile_pattern))
+data_path = datamodule.hparams.datafile_pattern
+if fold is not None:    #TODO: figure out why override did not set it up properly?
+    data_path = data_path.replace('.h5', f'_cv{fold}.h5')
+data_paths = sorted(glob(data_path))
+assert len(data_paths)>0, f'Nothing matches {data_path}'
 # Give each session a unique file path
 for s in range(len(data_paths)):
     session = data_paths[s].split("/")[-1].split("_")[-1].split(".")[0]
     if fold is not None:
         session = f'cv{fold}'
-    filename = f'lfads_ablated_output_{session}.h5' # if model_dest + '*.h5'
+    filename = f'lfads_W_ablated_output_{session}.h5' # if model_dest + '*.h5'
     run_posterior_sampling(model, datamodule, filename_source, num_samples=50)
 
     # placing the output file in the right folder, assuming recording had a single session

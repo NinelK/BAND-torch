@@ -1,7 +1,8 @@
 import pandas as pd
 
 # Read the CSV file
-df = pd.read_csv('dataset_summary.csv')
+# df = pd.read_csv('dataset_summary.csv')
+df = pd.read_csv('avg_per_epoch_R2.csv')
 
 #split 'Dataset' into Monkey and Date
 df[['Monkey','Date']] = df['Dataset'].str.split('_CO_FF_',expand=True)

@@ -1,5 +1,6 @@
 _target_: lfads_torch.datamodules.BasicDataModule
 datafile_pattern: ${relpath:datasets/mc_maze-20ms-val.h5}
+fold: !!null
 batch_keys:
   - behavior
 attr_keys:

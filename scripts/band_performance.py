@@ -22,6 +22,7 @@ import hydra
 import sys
 
 from lfads_torch.band_utils import flatten
+from lfads_torch.metrics import r2_score
 
 name_translation = {
     'chewie_09_15': 'Chewie_CO_FF_2016-09-15',
@@ -127,8 +128,8 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
         for a in ax:
             a.axis("off")
 
-    R2_iso_pos = 1 - np.sum((pos - pred_pos) ** 2) / np.sum((pos - pos.mean()) ** 2)
-    R2_iso_vel = 1 - np.sum((vel - pred_vel) ** 2) / np.sum((vel - vel.mean()) ** 2)
+    R2_iso_pos = r2_score(pred_pos, pos)
+    R2_iso_vel = r2_score(pred_vel, vel)
     
     axes[0].text(np.min(pos[...,0]),np.max(pos[...,1]),f'R2_pos = {R2_iso_pos*100:.2f}%')
     ax_vel[0][-1].set_title(f'R2_vel = {R2_iso_vel*100:.2f}%')
@@ -250,9 +251,9 @@ for sess_id, dataset_filename in enumerate(data_paths):
     if co_dim > 0:
         # load ablated model components
         if 'pbt' in PROJECT_STR:
-            data_path = best_model_dest + model_name + f'/best_model/lfads_ablated_output_{session}.h5'
+            data_path = best_model_dest + model_name + f'/best_model/lfads_W_ablated_output_{session}.h5'
         else:
-            data_path = best_model_dest + model_name + f'/lfads_ablated_output_{session}.h5'
+            data_path = best_model_dest + model_name + f'/lfads_W_ablated_output_{session}.h5'
         with h5py.File(data_path) as f:
             noci_factors = f["valid_factors"][:]
             noci_behavior = f["valid_output_behavior_params"][:]
@@ -342,7 +343,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
         mn = 'band'
     else:
         raise ValueError(f'Unknown model name {model_name}')
-    if short_dataset_name in name_translation:
+    if (short_dataset_name in name_translation) & (fold is None):
         results_path = f'./results/{name_translation[short_dataset_name]}.h5'
         with h5py.File(results_path, 'a') as f:
             save_results(f,area,mn,factors.shape[-1],controls.shape[-1],train_outputs, test_outputs)
@@ -358,7 +359,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     else:
         in_features = config.model.behavior_readout.in_features
         out_features = config.model.behavior_readout.out_features
-        beh_W = model.behavior_readout.layers[1].weight.T
+        beh_W = model.behavior_readout.layers[2].weight.T
 
     assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
 
@@ -466,6 +467,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     df = pd.DataFrame(R2_results, index=[0])
     df.to_csv(f"{model_dest}/R2_results.csv")
+    print(df)
     
 
     fig.tight_layout()

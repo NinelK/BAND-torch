@@ -4,7 +4,8 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from lfads_torch.benchmark.biRNN_decoder import Decoder, r2_score
+from lfads_torch.benchmark.biRNN_decoder import Decoder
+from lfads_torch.metrics import r2_score
 
 num_epochs = 1000 # 1000 is enough
 batch_size = 100

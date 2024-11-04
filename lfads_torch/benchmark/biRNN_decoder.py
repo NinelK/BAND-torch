@@ -58,8 +58,3 @@ class Decoder(nn.Module):
 
 
         return out
-    
-def r2_score(y_true, y_pred):
-    SS_res =  torch.sum((y_true - y_pred)**2, axis=[0,1])
-    SS_tot = torch.sum((y_true - torch.mean(y_true, axis=[0,1]))**2, axis=[0,1])
-    return torch.mean(1 - SS_res/SS_tot)

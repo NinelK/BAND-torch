@@ -6,7 +6,7 @@ import sklearn.metrics
 
 max_iterations = 10000
 batch_size = 512
-output_dimension = 32
+output_dimension = 100
 lr = 0.0001
 T = 1
 
@@ -28,17 +28,16 @@ def r2_score(y_true, y_pred):
     SS_tot = np.sum((y_true - np.mean(y_true, axis=0))**2, axis=0)
     return np.mean(1 - SS_res/SS_tot)
 
-# ~400 is optimal
 def decoding_pos(embedding_train, embedding_test, label_train, label_test, n_neighbors=400):
    pos_decoder = KNNDecoder(n_neighbors=n_neighbors, metric="cosine")
    
    pos_decoder.fit(embedding_train, label_train)
-   print('Trained')
+#    print('Trained')
    
    pos_pred_test = pos_decoder.predict(embedding_test)
-   print('Predicted test')
+#    print('Predicted test')
    pos_pred_train = pos_decoder.predict(embedding_train)
-   print('Predicted train')
+#    print('Predicted train')
    
    train_score = sklearn.metrics.r2_score(label_train, pos_pred_train)
    test_score = sklearn.metrics.r2_score(label_test, pos_pred_test)
@@ -51,6 +50,22 @@ def decoding_pos(embedding_train, embedding_test, label_train, label_test, n_nei
            'test_err': pos_test_err,
            'train_pred': pos_pred_train,
            'test_pred': pos_pred_test}
+
+def fine_tune_n_neighbors(cebra_pos_train, label_train, cebra_pos_test, label_test):
+    '''Fine-tune the KNN decoder, according to Cebra paper
+    'For CEBRA we used kNN regression, and the number of neighbours k was again searched over [1, 2500].'
+    '''
+    nn = [1,100,200,300,400,500,1000,1500,2000,2500]
+
+    scores = []
+    for n_neighbors in nn:
+        cebra_pos_decode = decoding_pos(cebra_pos_train, cebra_pos_test, label_train, label_test, n_neighbors=n_neighbors)
+        scores.append(cebra_pos_decode['test_score'])
+    # plt.plot(nn,scores)
+    # plt.scatter(nn,scores)
+
+    n_neighbors = nn[np.argmax(scores)]
+    return n_neighbors
 
 def save_results(f,area,train_outputs, test_outputs):
     if f'train_{area}_cebra_pred' in f:
@@ -104,7 +119,13 @@ for short_dataset_name in tqdm(experiments):
         cebra_pos_train = cebra_pos_model.transform(neural_pos_train)
         cebra_pos_test = cebra_pos_model.transform(neural_pos_test)
 
-        cebra_pos_decode = decoding_pos(cebra_pos_train, cebra_pos_test, label_train, label_test, n_neighbors=200)
+        # # fine-tune n_neighbors (use validation set, then fix)
+        # n_neighbors = fine_tune_n_neighbors(cebra_pos_train, label_train, cebra_pos_test, label_test)
+        # print(f"Fine-tuned n_neighbors: {n_neighbors} for {short_dataset_name} {area}")
+
+        n_neighbors = 400
+
+        cebra_pos_decode = decoding_pos(cebra_pos_train, cebra_pos_test, label_train, label_test, n_neighbors=n_neighbors)
         train_outputs = cebra_pos_decode['train_pred'].reshape(train_behavior.shape)
         test_outputs = cebra_pos_decode['test_pred'].reshape(valid_behavior.shape)
 

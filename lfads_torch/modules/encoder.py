@@ -79,6 +79,8 @@ class Encoder(nn.Module):
             ci_fwd = F.pad(ci_fwd, (0, 0, hps.ci_lag, 0, 0, 0))
             ci_bwd = F.pad(ci_bwd, (0, 0, 0, hps.ci_lag, 0, 0))
             ci_len = hps.encod_seq_len - hps.ic_enc_seq_len
+            if hps.causal_con:
+                ci_bwd *= 0 # keep architecture, just zero-out backward pass
             ci = torch.cat([ci_fwd[:, :ci_len, :], ci_bwd[:, -ci_len:, :]], dim=2)
             # Add extra zeros if necessary for forward prediction
             fwd_steps = hps.recon_seq_len - hps.encod_seq_len

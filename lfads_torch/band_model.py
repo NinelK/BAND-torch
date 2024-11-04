@@ -32,6 +32,7 @@ class BAND(pl.LightningModule):
         reconstruction: nn.ModuleList,
         behavior_reconstruction: nn.ModuleList,
         variational: bool,
+        causal_con: bool,
         co_prior: nn.Module,
         ic_prior: nn.Module,
         ic_post_var_min: float,

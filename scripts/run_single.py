@@ -7,7 +7,7 @@ import sys
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS -----------
-PROJECT_STR = "band-paper"
+PROJECT_STR = "band-paper-slurm"
 MODEL_STR = sys.argv[1]
 DATASET_STR = sys.argv[2]
 RUN_TAG = sys.argv[3]
@@ -26,11 +26,11 @@ if '_cv' in DATASET_STR:
 # ------------------------------
 
 # Overwrite the directory if necessary
-if RUN_DIR.exists() and OVERWRITE:
-    shutil.rmtree(RUN_DIR)
-RUN_DIR.mkdir(parents=True)
+# if RUN_DIR.exists() and OVERWRITE:
+#     shutil.rmtree(RUN_DIR)
+# RUN_DIR.mkdir(parents=True)
 # Copy this script into the run directory
-shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
+# shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Switch to the `RUN_DIR` and train the model
 os.chdir(RUN_DIR)
 model_name = DATASET_STR.replace('_M1', '').replace('_PMd','')
@@ -57,18 +57,18 @@ if 'lfads' in RUN_TAG:
 if fold is not None:
     overrides["datamodule.fold"] = fold
 
-run_model(
-    overrides=overrides,
-    config_path="../configs/single.yaml",
-)
-
-# # if need to re-sample
-# # Switch working directory to this folder (usually handled by tune)
-# ckpt_path = 'lightning_checkpoints'
-# print(ckpt_path)
 # run_model(
 #     overrides=overrides,
-#     checkpoint_dir=ckpt_path,
 #     config_path="../configs/single.yaml",
-#     do_train=False,
 # )
+
+# if need to re-sample
+# Switch working directory to this folder (usually handled by tune)
+ckpt_path = 'lightning_checkpoints'
+print(ckpt_path)
+run_model(
+    overrides=overrides,
+    checkpoint_dir=ckpt_path,
+    config_path="../configs/single.yaml",
+    do_train=False,
+)
