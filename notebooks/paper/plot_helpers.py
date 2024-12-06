@@ -203,7 +203,7 @@ def plot_beh_pred_per_epoch(vel, pred_vel, dir_index, trials2plot, epochs, compo
         ax[0].spines['top'].set_visible(False)
         ax[0].spines['right'].set_visible(False)
         ax[0].set_yticks([])
-        ax[0].set_xlabel("Time (ms)")
+        ax[0].set_xlabel("Time, ms")
         ax[0].set_ylabel("Velocity X")
 
     for e in range(3):
@@ -259,16 +259,16 @@ def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
                 alpha=0.3, color=f'C{i}', label=spike_data_dir.split('_')[3].split('.mat')[0][5:]
             )
 
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_ylabel('FFT Amplitude')
+        ax.set_xlabel('Frequency, Hz')
+        ax.set_ylabel('FFT Amplitude, cm/s')
         ax.set_title(f'Monkey {m}')
         ax.set_ylim([0,2.5])
         ax.set_xlim([0,10])
         ax.legend()
 
 
-    axes[0].arrow(5., 1.9, 0, -.2, color="k", head_width=.2, head_length=5)
-    axes[1].arrow(4., 2, 0, -.2, color="k", head_width=.2, head_length=5)
+    axes[0].arrow(5., 1.9, 0, -.2, color="k", head_width=.2, head_length=.2)
+    axes[1].arrow(4., 2, 0, -.2, color="k", head_width=.2, head_length=.2)
 
 def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, plot='spectrum', peak_freq=5, color=None, vmax=500):
 
@@ -317,7 +317,7 @@ def plot_fourier_last_sessions(ax, monkey, spike_data_dir, vel, epoch, dt=0.01, 
 
     if plot == 'spectrum':
         im = ax.imshow(SR.mean(0).T[mask],aspect='auto',cmap='plasma',vmin=0, vmax=vmax)
-        plt.colorbar(im, ax=ax, extend='max', label='FFT amplitude', location='bottom', pad=0.2)
+        plt.colorbar(im, ax=ax, extend='max', label='FFT amplitude', location='bottom', pad=0.25)
         ax.set_yticks(np.arange(0,len(faxis[mask]),2))
         ax.set_yticklabels([f"{s:.2}" for s in faxis[mask][::2]])
         ax.set_ylabel('freq, Hz')
