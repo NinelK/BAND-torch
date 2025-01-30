@@ -88,6 +88,11 @@ echo 'export PATH=/home/$USER/git/cluster-scripts/experiments:$PATH' >> ~/.bashr
 source ~/.bashrc
 ```
 
+Monitor the progress with:
+1. `myjobs`
+2. checking tail of the log files in `~/slurm_logs/`; try `tail -f ~/slurm_logs/<yourlog>` to watch it live.
+more useful commands [here](https://github.com/cdt-data-science/cluster-scripts)
+
 # Note on hyperparameter scaling
 
 1. Switched recon_reduce_mean=False  (True by default). This means that when calculating neural reconstruction, LFADS takes the sum over log_likelihoods over time and neurons. Correct me if I'm wrong, but we are supposed to be treating all data points and neurons as independent observable variables, so the total log-likelihood should be a sum (not mean).
