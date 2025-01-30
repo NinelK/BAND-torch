@@ -26,7 +26,7 @@ fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
 cpus = 2
 
-RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+RUN_DIR = Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 OVERWRITE=True
 
 HYPERPARAM_SPACE = {
