@@ -1,2 +1,2 @@
-python scripts/run_pbt_multitask_slurm.py multitask_noPCR multitask_20140725 lfads_20f_4c 40 20 4 75 0.
-python scripts/run_pbt_multitask_slurm.py multitask_noPCR multitask_20140725 band_20f_4c 40 20 4 75 0.01
+python scripts/run_pbt_multitask_slurm.py multitask_noPCR multitask_20140725 lfads_20f_4c 40 20 4 20 0.
+python scripts/run_pbt_multitask_slurm.py multitask_noPCR multitask_20140725 band_20f_4c 40 20 4 20 0.01
