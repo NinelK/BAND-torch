@@ -20,7 +20,7 @@ postfix = f'{fac_dim}f_{co_dim}c'
 
 for bw, model_name in zip([0.0,0.1],['lfads','band']):
     RUN_TAG = f"{model_name}_{postfix}"
-    RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+    RUN_DIR = Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 
     # Set the mandatory config overrides to select datamodule and model
     mandatory_overrides = {
