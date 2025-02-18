@@ -24,7 +24,7 @@ RUN_TAG = sys.argv[3]
 encod_seq_len = sys.argv[4]
 fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
-cpus = 2
+cpus = 3
 
 RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 
@@ -47,8 +47,9 @@ HYPERPARAM_SPACE = {
 if 'band' in RUN_TAG:
     HYPERPARAM_SPACE["model.behavior_weight"] = HyperParam(1e-2, 1e-1, explore_wt=0.2)
 
-    HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
-        0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
+    if 'fixed_lag' not in MODEL_STR:
+        HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
+            0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
 
     print('Tune BAND weight and dropout too')
 

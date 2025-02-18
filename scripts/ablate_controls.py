@@ -47,7 +47,7 @@ overrides={
 if fold is not None:
     overrides["datamodule.fold"] = fold
 
-if 'lfads' in RUN_TAG:
+if 'lfads' in model_name:
     overrides["model.behavior_weight"] = 0.
     print('Zeroed out behavior weight to emulate LFADS')
 

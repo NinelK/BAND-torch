@@ -1,9 +1,13 @@
 from omegaconf import OmegaConf
 
-OmegaConf.register_new_resolver(
-    "relpath", lambda p: str(Path('/disk/scratch/nkudryas/BAND-torch/scripts/').parent / p)
-) # this is required for hydra to find the config files
+parent_path = '/disk/scratch2/nkudryas/BAND-torch'
 
+# EPOCH_NAMES = ['BL','AD','WO']
+EPOCH_NAMES = ['iso', 'wm', 'spr', 'iso8']
+
+OmegaConf.register_new_resolver(
+    "relpath", lambda p: str(Path(f'{parent_path}/scripts/').parent / p)
+)
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.axes import Axes
@@ -23,6 +27,7 @@ import sys
 
 from lfads_torch.band_utils import flatten
 from lfads_torch.metrics import r2_score
+from lfads_torch.modules.readin_readout import FanInSeq2Seq
 
 name_translation = {
     'chewie_09_15': 'Chewie_CO_FF_2016-09-15',
@@ -47,12 +52,12 @@ def get_target_ids(true_target_direction):
     true_label = np.array([np.where(uniq_dirs==t)[0][0] for t in true_target_direction])
     return true_label
 
-def plot_avg_traj(data,true_target_direction,title='',epoch_mask=True):
+def plot_avg_traj(data,true_target_direction,title='',epoch_mask=True, sharey=False):
     ''' plot average trajectory for each target direction '''
     true_label = get_target_ids(true_target_direction)
     n = data.shape[-1]
     col, row = min(n,5), max(1,int(np.ceil(n/5)))
-    fig, ax = plt.subplots(row,col, figsize=(col*3,row*2),sharex=True)
+    fig, ax = plt.subplots(row,col, figsize=(col*3,row*2),sharex=True, sharey=sharey)
     if type(ax) is Axes:
         ax = [ax]
     else:
@@ -136,17 +141,15 @@ def plot_beh_pred(vel, pred_vel, dir_index, trials2plot, file_name=""):
 
     plt.savefig(file_name)
 
-OLD = False
-
 PROJECT_STR = sys.argv[1]
 MODEL_STR = sys.argv[2]
 DATASET_STR = sys.argv[3] #'chewie_10_07'
 bin_width_sec = 0.01 # chewie
-PATH = 'f"/disk/scratch/nkudryas/BAND-torch/datasets'
+PATH = parent_path + '/datasets'
 
-best_model_dest = f"/disk/scratch/nkudryas/BAND-torch/runs/{PROJECT_STR}/{DATASET_STR}/"
+best_model_dest = f"{parent_path}/runs/{PROJECT_STR}/{DATASET_STR}"
 model_name = sys.argv[4]
-model_dest = f"{best_model_dest}/{model_name}"
+model_dest = f"{best_model_dest}/{model_name}/"
 
 fold = None
 if '_cv' in DATASET_STR:
@@ -159,7 +162,7 @@ else:
 encod_seq_len = sys.argv[5]
 overrides={
         "datamodule": dataset_name,
-        "model": MODEL_STR+("_old" if OLD else ""), #dataset_name.replace('_M1', '').replace('_PMd',''),
+        "model": MODEL_STR,  #dataset_name.replace('_M1', '').replace('_PMd',''),
         "model.encod_seq_len": encod_seq_len,
         "model.recon_seq_len": encod_seq_len,
         "model.fac_dim": sys.argv[6],
@@ -169,7 +172,7 @@ overrides={
 if fold is not None:
     overrides["datamodule.fold"] = fold
 
-if 'lfads' in RUN_TAG:
+if 'lfads' in model_name:
     overrides["model.behavior_weight"] = 0.
     print('Zeroed out behavior weight to emulate LFADS')
 
@@ -196,10 +199,8 @@ if 'pbt' in PROJECT_STR:
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest+'/best_model/checkpoint*')
     ckpt_path = checkpoint_folders[-1] + '/tune.ckpt'
-    model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 else:
     ckpt_path = f'{model_dest}/lightning_checkpoints/last.ckpt'
-
 model.load_state_dict(torch.load(ckpt_path)["state_dict"])
 
 # load the dataset
@@ -210,12 +211,9 @@ else:
 data_paths = sorted(glob(datafile_pattern))
 # Give each session a unique file path
 for sess_id, dataset_filename in enumerate(data_paths):
-    if OLD:
-        session = 'sess0'
-    else:
-        session = dataset_filename.split("/")[-1].split("_")[-1].split(".")[0]
-        if fold is not None:
-            session = f"cv{fold}"
+    session = dataset_filename.split("/")[-1].split("_")[-1].split(".")[0]
+    if fold is not None:
+        session = f"cv{fold}"
     
     print(dataset_filename)
 
@@ -224,15 +222,15 @@ for sess_id, dataset_filename in enumerate(data_paths):
         valid_data = f['valid_recon_data'][:]
         train_inds, valid_inds = f['train_inds'][:], f['valid_inds'][:]
         valid_epoch = f['valid_epoch'][:]
-        true_train_beh = f['train_vel'][:]
-        true_valid_beh = f['valid_vel'][:]
+        true_train_beh = f['train_behavior'][:]
+        true_valid_beh = f['valid_behavior'][:]
         true_target_direction = f['valid_target_direction'][:]
 
     # load model components
     if 'pbt' in PROJECT_STR:
-        data_path = best_model_dest + model_name + f'/best_model/lfads_output_{session}.h5'
+        data_path = best_model_dest + '/' + model_name + f'/best_model/lfads_output_{session}.h5'
     else:
-        data_path = best_model_dest + model_name + f'/lfads_output_{session}.h5'
+        data_path = best_model_dest + '/' + model_name + f'/lfads_output_{session}.h5'
     with h5py.File(data_path) as f:
         # print(f.keys())
         # Merge train and valid data for factors and rates
@@ -251,9 +249,9 @@ for sess_id, dataset_filename in enumerate(data_paths):
     if co_dim > 0:
         # load ablated model components
         if 'pbt' in PROJECT_STR:
-            data_path = best_model_dest + model_name + f'/best_model/lfads_W_ablated_output_{session}.h5'
+            data_path = best_model_dest+ '/' + model_name + f'/best_model/lfads_W_ablated_output_{session}.h5'
         else:
-            data_path = best_model_dest + model_name + f'/lfads_W_ablated_output_{session}.h5'
+            data_path = best_model_dest+ '/' + model_name + f'/lfads_W_ablated_output_{session}.h5'
         with h5py.File(data_path) as f:
             noci_factors = f["valid_factors"][:]
             noci_behavior = f["valid_output_behavior_params"][:]
@@ -352,28 +350,48 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     # Plot 1: plot behavior weight matrices
     seq_len = config.model.recon_seq_len
-    if OLD:
-        in_features = config.model.behavior_readout.modules[0].in_features
-        out_features = config.model.behavior_readout.modules[0].out_features
-        beh_W = model.behavior_readout[0].layers[1].weight.T
-    else:
-        in_features = config.model.behavior_readout.in_features
-        out_features = config.model.behavior_readout.out_features
+
+    in_features = config.model.behavior_readout.in_features
+    out_features = config.model.behavior_readout.out_features
+    
+    if type(model.behavior_readout) == FanInSeq2Seq:
         beh_W = model.behavior_readout.layers[2].weight.T
 
-    assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
+        assert beh_W.shape == (in_features*seq_len, out_features*seq_len)
 
-    beh_W = beh_W.reshape((seq_len, in_features, seq_len, out_features))
+        beh_W = beh_W.reshape((seq_len, in_features, seq_len, out_features))
 
-    r = torch.std(beh_W)*4
-    fig, ax = plt.subplots(out_features, in_features, figsize=(in_features, out_features))
-    for j in range(in_features):
-        for i in range(out_features):
-            ax[i,j].imshow(beh_W[:,j,:,i].detach().numpy(), cmap='RdBu', vmin=-r, vmax=r)
-            ax[i,j].set_xticks([])
-            ax[i,j].set_yticks([])
+        r = torch.std(beh_W)*4
+        fig, ax = plt.subplots(out_features, in_features, figsize=(in_features, out_features))
+        for j in range(in_features):
+            for i in range(out_features):
+                ax[i,j].imshow(beh_W[:,j,:,i].detach().numpy(), cmap='RdBu', vmin=-r, vmax=r)
+                ax[i,j].set_xticks([])
+                ax[i,j].set_yticks([])
 
-    fig.savefig(f"{model_dest}/behavior_weights.png")
+        fig.savefig(f"{model_dest}/behavior_weights.png")
+    else:
+        beh_W = model.behavior_readout.weight
+
+        # assert beh_W.shape == (in_features,out_features)
+        print(beh_W.shape)
+
+        r = torch.std(beh_W)*4
+        fig = plt.figure(figsize=(in_features,out_features))
+        plt.imshow(beh_W.detach().numpy().T, cmap='RdBu', vmin=-r, vmax=r, interpolation='none')
+        plt.xlabel('behaviors')
+        plt.ylabel('factors')
+        fig.savefig(f"{model_dest}/behavior_weights.png")
+
+    # neural readout weights
+    W = model.readout[0].weight
+    r = torch.std(W)*4
+    fig = plt.figure(figsize=(in_features,out_features))
+    plt.imshow(W.detach().numpy().T, cmap='RdBu', vmin=-r, vmax=r, interpolation='none')
+    plt.colorbar()
+    plt.xlabel('neurons')
+    plt.ylabel('factors')
+    fig.savefig(f"{model_dest}/neural_weights.png")
 
     # Plot 2: plot ICs
 
@@ -475,13 +493,13 @@ for sess_id, dataset_filename in enumerate(data_paths):
     fig.savefig(f"{model_dest}/factors_controls_behavior.png")
 
     # Plot 4: plot avg factors and controls per condition (BL / AD / WO)
-    for epoch, epoch_name in enumerate(['BL','AD','WO']):
+    for epoch, epoch_name in enumerate(EPOCH_NAMES):
         fig = plot_avg_traj(factors,true_target_direction,title='factor',epoch_mask=(valid_epoch == epoch))
         fig.savefig(f"{model_dest}/avg_factors_{epoch_name}.png")
         if co_dim > 0:
             fig = plot_avg_traj(noci_factors,true_target_direction,title='factor with no CI',epoch_mask=(valid_epoch == epoch))
             fig.savefig(f"{model_dest}/avg_noci_factors_{epoch_name}.png")
-            fig = plot_avg_traj(controls,true_target_direction,title='control',epoch_mask=(valid_epoch == epoch))
+            fig = plot_avg_traj(controls,true_target_direction,title='control',epoch_mask=(valid_epoch == epoch), sharey=True)
             fig.savefig(f"{model_dest}/avg_controls_{epoch_name}.png")
 
     fig = plot_avg_traj(factors,true_target_direction,title='factor')
@@ -499,13 +517,11 @@ for sess_id, dataset_filename in enumerate(data_paths):
     for d in range(np.max(dir_index) + 1):
         mask = d == dir_index
         avg_vel[mask] = true_valid_beh[mask].mean(0)
-    if valid_epoch.max() >= 1:
-        epoch2plot = 1 # AD
-    else:
-        epoch2plot = 0 # other datasets that don't have epochs
-    trials2plot = get_trials2plot(true_valid_beh, avg_vel, dir_index, valid_epoch,epoch2plot=epoch2plot) # trials with max distance from avg vel
-    plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction.png")
-    plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction.svg")
-    if co_dim > 0:
-        plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci.png")
-        plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci.svg")
+    for epoch2plot,epoch_name in enumerate(EPOCH_NAMES):
+        
+        trials2plot = get_trials2plot(true_valid_beh, avg_vel, dir_index, valid_epoch,epoch2plot=epoch2plot) # trials with max distance from avg vel
+        plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_{epoch_name}.png")
+        plot_beh_pred(true_valid_beh, Y_pred_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_{epoch_name}.svg")
+        if co_dim > 0:
+            plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci_{epoch_name}.png")
+            plot_beh_pred(true_valid_beh, Y_pred_noci_seq2seq, dir_index, trials2plot, f"{model_dest}/beh_prediction_noci_{epoch_name}.svg")
