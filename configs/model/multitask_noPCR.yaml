@@ -34,6 +34,7 @@ behavior_readout:
   in_features: ${model.fac_dim}
   out_features: 4
   time_features: ${model.encod_seq_len}
+  dropout_rate: 0.5
 
 # --------- augmentation --------- #
 train_aug_stack:
