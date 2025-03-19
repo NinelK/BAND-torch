@@ -365,3 +365,75 @@ def class_accuracy(y_train, dir_index_train, y_pred, dir_index):
     lda = LinearDiscriminantAnalysis()
     lda.fit(y_train, dir_index_train)
     return lda.score(y_pred, dir_index)
+
+def plot_fourier_with_cos_sim(ax, ax_p, V, V_true, dt=0.01, label='', 
+                 c='k', linestyle='solid', peak_freq = 5):
+                #  text_pos = None):
+
+        SR = []
+        cos_sim = []
+        for _ in range(100):
+
+            idxs = np.random.choice(V.shape[0], V.shape[0], replace=True)
+
+            x = V[idxs]
+            xf = fft(x)  # Compute Fourier transform of x
+            Sxx_all = (xf * xf.conj()).real # Compute power spectrum
+            
+            SR.append(np.sqrt(Sxx_all).mean(0))
+
+            if V_true is not None:
+                x_true = V_true[idxs]
+                xf_true = fft(x_true)  # Compute Fourier transform of x_true
+                cos = np.cos(np.angle(xf) - np.angle(xf_true))
+                cos_sim.append(cos.mean(0))
+
+        faxis = fftfreq(Sxx_all.shape[1]) / dt  # Construct frequency axis
+        SR = np.asarray(SR) # [samples, freq]
+
+        mask = (faxis > 0) & (faxis <= 10)
+        ax.plot(
+            faxis[mask],
+            SR.mean(0)[mask],c=c, label=label, linestyle=linestyle)
+        
+        ax.fill_between(
+            faxis[mask],
+            SR.mean(0)[mask] - SR.std(0)[mask],
+            SR.mean(0)[mask] + SR.std(0)[mask],
+            alpha=0.3, color=c
+        )
+
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel(r'FFT Amplitude [cm/s]')
+        ax.set_ylim([0,150])
+        ax.set_xlim([0,10])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(True)
+
+        if V_true is not None:
+            cos_sim = np.asarray(cos_sim) # [samples, freq]
+
+            idx_peak = np.argmin(np.abs(faxis - peak_freq))
+            str = label + ' cos$_{' + f'{faxis[idx_peak]:.1f}' +'Hz}$='
+            label_p = rf'{str}' + f'{cos_sim.mean(0)[idx_peak]:.2f}'
+
+            ax_p.plot(
+                faxis[mask],
+                cos_sim.mean(0)[mask],c=c, label=label_p, linestyle=linestyle)
+            
+            ax_p.fill_between(
+                faxis[mask],
+                cos_sim.mean(0)[mask] - cos_sim.std(0)[mask],
+                cos_sim.mean(0)[mask] + cos_sim.std(0)[mask],
+                alpha=0.3, color=c
+            )
+            ax_p.set_xlabel('Frequency [Hz]')
+            ax_p.set_ylabel(r'FFT phase similarity')
+            ax_p.set_ylim([-0.2,1])
+            ax_p.set_xlim([0,10])
+            ax_p.spines['top'].set_visible(False)
+            ax_p.spines['right'].set_visible(False)
+            ax_p.grid(True)
+
+        
