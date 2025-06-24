@@ -1,4 +1,4 @@
-model=kl1_gauss_bd
+model=kl1_gauss_bd_d20_causal_ci
 fac_dim=100
 co_dim=0
 
