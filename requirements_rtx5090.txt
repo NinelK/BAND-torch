@@ -1,7 +1,8 @@
 # torch==1.13.1
 # torchmetrics==0.7.2
-pytorch-lightning==1.6.5post0
+# pytorch-lightning==1.6.5post0 # almost works, model serialization issue
 # pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu128
+pytorch-lightning==1.9.0
 numpy==1.26.2
 hydra-core==1.3.0
 h5py
@@ -16,3 +17,7 @@ scikit-learn
 ipykernel
 seaborn
 setuptools==69.5.1
+
+# additional changes to the code:
+# 1. export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+# 2. in run_pbt.py and alike: local_dir=RUN_DIR.parent.as_posix()

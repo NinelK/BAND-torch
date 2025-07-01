@@ -1,6 +1,6 @@
 import os
 import shutil
-from glob import glob
+
 # from datetime import datetime
 import sys
 from pathlib import Path
@@ -26,12 +26,14 @@ fac_dim = sys.argv[5]
 co_dim = sys.argv[6]
 cpus = 3
 
-RUN_DIR = Path("/disk/scratch2/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+RUN_DIR = (
+    Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+)
 
 fold = None
-if '_cv' in DATASET_STR:
-    DATASET_STR, fold = DATASET_STR.split('_cv')
-    print('CV fold: ',fold)
+if "_cv" in DATASET_STR:
+    DATASET_STR, fold = DATASET_STR.split("_cv")
+    print("CV fold: ", fold)
 
 HYPERPARAM_SPACE = {
     "model.lr_init": HyperParam(
@@ -44,14 +46,15 @@ HYPERPARAM_SPACE = {
         0.01, 0.7, explore_wt=0.3, enforce_limits=True, init=0.5, sample_fn="uniform"
     ),
 }
-if 'band' in RUN_TAG:
+if "band" in RUN_TAG:
     HYPERPARAM_SPACE["model.behavior_weight"] = HyperParam(1e-2, 1e-1, explore_wt=0.2)
 
-    if 'fixed_lag' not in MODEL_STR:
+    if "fixed_lag" not in MODEL_STR:
         HYPERPARAM_SPACE["model.behavior_readout.dropout_rate"] = HyperParam(
-            0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform")
+            0.0, 0.8, explore_wt=0.3, enforce_limits=True, sample_fn="uniform"
+        )
 
-    print('Tune BAND weight and dropout too')
+    print("Tune BAND weight and dropout too")
 
 
 # ------------------------------
@@ -80,14 +83,14 @@ mandatory_overrides = {
 if fold is not None:
     mandatory_overrides["datamodule.fold"] = fold
 
-if 'lfads' in RUN_TAG:
-    mandatory_overrides["model.behavior_weight"] = 0.
-    print('Zeroed out behavior weight to emulate LFADS')
+if "lfads" in RUN_TAG:
+    mandatory_overrides["model.behavior_weight"] = 0.0
+    print("Zeroed out behavior weight to emulate LFADS")
 
-if sys.argv[8] == 'False':
+if sys.argv[8] == "False":
     mandatory_overrides["model.ic_enc_seq_len"] = 0
     mandatory_overrides["model.causal_con"] = False
-    print('Running an acausal model (no split, no causality)')
+    print("Running an acausal model (no split, no causality)")
 
 RUN_DIR.mkdir(parents=True)
 # Copy this script into the run directory
@@ -116,9 +119,9 @@ analysis = tune.run(
         min_improvement_ratio=5e-4,
     ),
     config={**mandatory_overrides, **init_space},
-    resources_per_trial=dict(cpu=cpus, gpu=0.5),
+    resources_per_trial=dict(cpu=cpus, gpu=0.1),
     num_samples=num_trials,
-    local_dir=RUN_DIR.parent,
+    local_dir=RUN_DIR.parent.as_posix(),
     search_alg=BasicVariantGenerator(random_state=0),
     scheduler=BinaryTournamentPBT(
         perturbation_interval=perturbation_interval,
@@ -163,4 +166,3 @@ run_model(
 #     config_path="../configs/pbt.yaml",
 #     do_train=False,
 # )
-
