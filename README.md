@@ -36,6 +36,9 @@ downgrade numpy < 2
 `pip install numpy==1.26.0 scikit-learn==1.3.0`
 basically, `import sklearn` won't work without these downgrades. Until sklearn can't be imported, BAND will throw confusing hydra-related errors.
 
+Backward compatibility for newer PyTorch:
+`export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1`
+
 # slurm notes
 
 Follow quick [setup guidelines](https://docs.google.com/document/d/1C4x2Ne0lpm4KpfoIPH1_afcQVF_qoW8NWqyIIndUpow/edit)

@@ -17,7 +17,7 @@ from lfads_torch.extensions.tune import (
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
-PROJECT_STR = "pbt-no-control"
+PROJECT_STR = "pbt-causal-go"
 MODEL_STR = sys.argv[1]
 DATASET_STR = sys.argv[2]
 RUN_TAG = sys.argv[3]
