@@ -33,6 +33,7 @@ class BAND(pl.LightningModule):
         behavior_reconstruction: nn.ModuleList,
         variational: bool,
         causal_con: bool,
+        perturb_time: int,
         co_prior: nn.Module,
         ic_prior: nn.Module,
         ic_post_var_min: float,
@@ -82,7 +83,11 @@ class BAND(pl.LightningModule):
         # Store `co_prior` on `hparams` so it can be accessed in decoder
         self.hparams.co_prior = co_prior
         # Make sure the nn.ModuleList arguments are all the same length
-        assert len(readin) == len(readout) == len(reconstruction), (len(readin), len(readout), len(reconstruction))
+        assert len(readin) == len(readout) == len(reconstruction), (
+            len(readin),
+            len(readout),
+            len(reconstruction),
+        )
         # Make sure that non-variational models use null priors
         if not variational:
             assert isinstance(ic_prior, Null) and isinstance(co_prior, Null)
@@ -145,9 +150,7 @@ class BAND(pl.LightningModule):
         # Convert the factors representation into output distribution parameters
         factors = torch.split(factors, batch_sizes)
         output_params = [self.readout[s](f) for s, f in zip(sessions, factors)]
-        output_behavior_params = [
-            self.behavior_readout(f) for f in factors
-        ]
+        output_behavior_params = [self.behavior_readout(f) for f in factors]
         # Separate parameters of the output distribution
         output_params = [
             self.recon[s].reshape_output_params(op)
@@ -294,8 +297,12 @@ class BAND(pl.LightningModule):
         # Compute the KL penalty on posteriors
         ic_kl = self.ic_prior(ic_mean, ic_std)
         co_kl = self.co_prior(co_means, co_stds)
-        ic_kl_scaled = torch.abs(ic_kl - self.hparams.kl_ic_target) * self.hparams.kl_ic_scale
-        co_kl_scaled = torch.abs(co_kl - self.hparams.kl_co_target) * self.hparams.kl_co_scale
+        ic_kl_scaled = (
+            torch.abs(ic_kl - self.hparams.kl_ic_target) * self.hparams.kl_ic_scale
+        )
+        co_kl_scaled = (
+            torch.abs(co_kl - self.hparams.kl_co_target) * self.hparams.kl_co_scale
+        )
         # Compute ramping coefficients
         l2_ramp = self._compute_ramp(hps.l2_start_epoch, hps.l2_increase_epoch)
         kl_ramp = self._compute_ramp(hps.kl_start_epoch, hps.kl_increase_epoch)
@@ -326,8 +333,12 @@ class BAND(pl.LightningModule):
         beh_r2 = torch.mean(
             torch.stack(
                 [
-                    r2_score(output[s].output_behavior_params[:, : batch[s].behavior.shape[1]], 
-                             batch[s].behavior)
+                    r2_score(
+                        output[s].output_behavior_params[
+                            :, : batch[s].behavior.shape[1]
+                        ],
+                        batch[s].behavior,
+                    )
                     for s in sessions
                 ]
             )
@@ -337,8 +348,8 @@ class BAND(pl.LightningModule):
         if self.hparams.behavior_weight == 0:
             pbt_target = recon_reduce_mean
         else:
-            pbt_target = recon_reduce_mean + (1-beh_r2)
-        
+            pbt_target = recon_reduce_mean + (1 - beh_r2)
+
         # Compute batch sizes for logging
         batch_sizes = [len(batch[s].encod_data) for s in sessions]
         # Log per-session metrics

@@ -80,7 +80,7 @@ class Encoder(nn.Module):
             ci_bwd = F.pad(ci_bwd, (0, 0, 0, hps.ci_lag, 0, 0))
             ci_len = hps.encod_seq_len - hps.ic_enc_seq_len
             if hps.causal_con:
-                ci_bwd *= 0 # keep architecture, just zero-out backward pass
+                ci_bwd *= 0  # keep architecture, just zero-out backward pass
             ci = torch.cat([ci_fwd[:, :ci_len, :], ci_bwd[:, -ci_len:, :]], dim=2)
             # Add extra zeros if necessary for forward prediction
             fwd_steps = hps.recon_seq_len - hps.encod_seq_len
@@ -90,5 +90,13 @@ class Encoder(nn.Module):
         else:
             # Create a placeholder if there's no controller
             ci = torch.zeros(data.shape[0], hps.recon_seq_len, 0).to(data.device)
+
+        # print(ci.shape)
+        if hps.perturb_time >= 0:
+            t = hps.perturb_time
+            # ci[:,t] = ci[:,60]
+            ci[:, :t] = 0.0
+            ci[:, (t + 1) :] = 0.0
+            # ci[:,t] = 3.0 * ci[:,t] / torch.linalg.norm(ci[:,t],axis=-1,keepdim=True)
 
         return ic_mean, ic_std, ci
