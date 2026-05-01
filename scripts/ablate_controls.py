@@ -68,7 +68,7 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-if ("pbt" in PROJECT_STR) or ('ext' in PROJECT_STR):
+if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest + "/best_model/checkpoint*")
     ckpt_path = checkpoint_folders[-1] + "/tune.ckpt"

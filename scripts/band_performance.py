@@ -212,7 +212,7 @@ model = instantiate(config.model)
 
 from glob import glob
 
-if ("pbt" in PROJECT_STR) or ('ext' in PROJECT_STR):
+if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest + "/best_model/checkpoint*")
     ckpt_path = checkpoint_folders[-1] + "/tune.ckpt"
@@ -246,7 +246,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
         true_target_direction = f["valid_target_direction"][:]
 
     # load model components
-    if ("pbt" in PROJECT_STR) or ('ext' in PROJECT_STR):
+    if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
         data_path = (
             best_model_dest
             + "/"
