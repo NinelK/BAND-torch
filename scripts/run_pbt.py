@@ -17,13 +17,13 @@ from lfads_torch.extensions.tune import (
 from lfads_torch.run_model import run_model
 
 # ---------- OPTIONS ----------
-PROJECT_STR = "band-paper-slurm"
-MODEL_STR = sys.argv[1]
-DATASET_STR = sys.argv[2]
-RUN_TAG = sys.argv[3]
-encod_seq_len = sys.argv[4]
-fac_dim = sys.argv[5]
-co_dim = sys.argv[6]
+PROJECT_STR = sys.argv[1]
+MODEL_STR = sys.argv[2]
+DATASET_STR = sys.argv[3]
+RUN_TAG = sys.argv[4]
+encod_seq_len = sys.argv[5]
+fac_dim = sys.argv[6]
+co_dim = sys.argv[7]
 cpus = 3
 
 RUN_DIR = (
@@ -78,7 +78,7 @@ mandatory_overrides = {
     "model.kl_co_scale": float(encod_seq_len),
     "model.fac_dim": fac_dim,
     "model.co_dim": co_dim,
-    "model.encod_data_dim": sys.argv[7],
+    "model.encod_data_dim": sys.argv[8],
 }
 if fold is not None:
     mandatory_overrides["datamodule.fold"] = fold
@@ -87,7 +87,7 @@ if "lfads" in RUN_TAG:
     mandatory_overrides["model.behavior_weight"] = 0.0
     print("Zeroed out behavior weight to emulate LFADS")
 
-if sys.argv[8] == "False":
+if sys.argv[9] == "False":
     mandatory_overrides["model.ic_enc_seq_len"] = 0
     mandatory_overrides["model.causal_con"] = False
     print("Running an acausal model (no split, no causality)")
@@ -119,7 +119,7 @@ analysis = tune.run(
         min_improvement_ratio=5e-4,
     ),
     config={**mandatory_overrides, **init_space},
-    resources_per_trial=dict(cpu=cpus, gpu=0.1),
+    resources_per_trial=dict(cpu=cpus, gpu=0.2),
     num_samples=num_trials,
     local_dir=RUN_DIR.parent.as_posix(),
     search_alg=BasicVariantGenerator(random_state=0),

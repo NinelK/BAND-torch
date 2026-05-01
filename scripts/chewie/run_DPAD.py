@@ -1,10 +1,15 @@
 import h5py
 import numpy as np
-from DPAD.tools.flexible import fitDPADWithFlexibleNonlinearity
+from DPAD import DPADModel
 from tqdm import tqdm
 
+# selectedMethodCode = 'DPAD_RTR2_uAKCz1HL64U_ErSV
+# selectedMethodCode = 'DPAD_RTR2_CzCy1HL64U_ErSV16' this was selected when spikes were int
+selectedMethodCode = "DPAD_RTR2_Cz1HL64U_ErSV16"
+
 n_factors = 100
-n_beh_factors = 40
+n_beh_factors = 100
+epochs = 2500  # Default for this is 2500.
 
 experiments = [
     "Chewie_CO_FF_2016-09-15",
@@ -41,7 +46,7 @@ for short_dataset_name in tqdm(experiments):
 
     for area in ["all", "PMd", "M1"]:
         dataset_name = f"{short_dataset_name}_session_vel_{area}_spikes_go"
-        loadpath = f"/disk/scratch2/nkudryas/BAND-torch/datasets/{dataset_name}.h5"
+        loadpath = f"/disk/scratch/nkudryas/BAND-torch/datasets/{dataset_name}.h5"
 
         data = {}
         with h5py.File(loadpath, "r") as h5file:
@@ -64,10 +69,25 @@ for short_dataset_name in tqdm(experiments):
             for key in h5file.keys():
                 data[key] = h5file[key][()]
 
-        model = fitDPADWithFlexibleNonlinearity(...)
+        idSysF = DPADModel()
+        args = DPADModel.prepare_args(selectedMethodCode)
+        yTrain = train_data.reshape((-1, train_data.shape[-1])) / 0.01
+        zTrain = train_behavior.reshape((-1, train_behavior.shape[-1]))
+        idSysF.fit(
+            yTrain.T, Z=zTrain.T, nx=n_factors, n1=n_beh_factors, epochs=epochs, **args
+        )
+        zTrainPredF, _, _ = idSysF.predict(
+            yTrain
+        )  # Run inference to generate predictions (Train test smoothing first)
 
-        train_outputs = ...
-        test_outputs = np.array(...)
+        yTest = valid_data.reshape((-1, valid_data.shape[-1])) / 0.01
+        zTest = valid_behavior.reshape((-1, valid_behavior.shape[-1]))
+        zTestPredF, yTestPredF, xTestPredF = idSysF.predict(
+            yTest
+        )  # Run inference to generate predictions
+
+        train_outputs = zTrainPredF.reshape(train_behavior.shape)
+        test_outputs = zTestPredF.reshape(valid_behavior.shape)
 
         final_r2 = r2_score(valid_behavior, test_outputs).item()
         summary_dict[short_dataset_name][f"{area}_R2_all"] = np.round(100 * final_r2, 1)

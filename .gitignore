@@ -32,6 +32,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+results/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -155,7 +156,7 @@ dmypy.json
 configs/model/*
 configs/datamodule/*
 ComputationThruDynamicsBenchmark/
-datasets/Tauriel/     
+datasets/Tauriel/
 results_no_excl_trials/
 
 notebooks/COSYNE/
