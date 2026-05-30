@@ -1,5 +1,7 @@
 from omegaconf import OmegaConf
 
+NEW_CHECKPOINT_STYLE = True
+
 parent_path = "/disk/scratch/nkudryas/BAND-torch"
 
 EPOCH_NAMES = ["BL", "AD", "WO"]
@@ -212,7 +214,7 @@ model = instantiate(config.model)
 
 from glob import glob
 
-if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
+if NEW_CHECKPOINT_STYLE:
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest + "/best_model/checkpoint*")
     ckpt_path = checkpoint_folders[-1] + "/tune.ckpt"
@@ -241,12 +243,12 @@ for sess_id, dataset_filename in enumerate(data_paths):
         valid_data = f["valid_recon_data"][:]
         train_inds, valid_inds = f["train_inds"][:], f["valid_inds"][:]
         valid_epoch = f["valid_epoch"][:]
-        true_train_beh = f["train_behavior"][:]
-        true_valid_beh = f["valid_behavior"][:]
+        true_train_beh = f["train_vel"][:]
+        true_valid_beh = f["valid_vel"][:]
         true_target_direction = f["valid_target_direction"][:]
 
     # load model components
-    if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
+    if NEW_CHECKPOINT_STYLE:
         data_path = (
             best_model_dest
             + "/"
@@ -272,7 +274,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     if co_dim > 0:
         # load ablated model components
-        if "pbt" in PROJECT_STR:
+        if NEW_CHECKPOINT_STYLE:
             data_path = (
                 best_model_dest
                 + "/"
