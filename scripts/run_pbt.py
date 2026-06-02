@@ -27,7 +27,7 @@ co_dim = sys.argv[7]
 cpus = 3
 
 RUN_DIR = (
-    Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+    Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 )
 
 fold = None
@@ -92,7 +92,7 @@ if sys.argv[9] == "False":
     mandatory_overrides["model.causal_con"] = False
     print("Running an acausal model (no split, no causality)")
 
-RUN_DIR.mkdir(parents=True)
+RUN_DIR.mkdir(parents=True, exist_ok=True)
 # Copy this script into the run directory
 shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Run the hyperparameter search

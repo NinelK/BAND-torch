@@ -1,5 +1,6 @@
 import argparse
 import os
+import h5py
 
 import numpy as np
 import torch
@@ -21,34 +22,78 @@ def lorenz_dynamics(state, t, sigma=10.0, rho=28.0, beta=8.0 / 3.0):
     return [dxdt, dydt, dzdt]
 
 
-def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
-    dataset_name = "Synthetic_Lorenz_Offmanifold_Unidir_Kicks"
+def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, behavior_noise_std=0.1):
+    """
+    Synthetic Lorenz attractor dataset for BAND training & evaluation.
+
+    The simulation works as follows:
+    1. A 3D Lorenz system evolves over time to produce true latent states (z).
+    2. Latent states are mapped to neural firing rates via: rate = exp(C @ z + d),
+       then Poisson spiking produces observed spike counts (y_obs / encod_data).
+    3. Behavioral output ('velocity') is computed as: vel = C_vel @ z + noise.
+    4. On "perturbed" trials, random kicks are injected:
+       - On-manifold kicks shift the Lorenz state via B_in @ (direction_vec * magnitude).
+       - Off-manifold kicks add activity orthogonal to C.
+
+    n_neurons       : Number of simulated neurons (channels in the spiking data).
+    n_latents_true  : Dimensionality of the true latent Lorenz system (always 3).
+    n_bins          : Number of time bins per trial.
+    dt              : Duration of each time bin in seconds.
+    C               : Neural readout matrix (n_neurons x n_latents_true).
+                      Maps latent states to log-firing rates.
+    d               : Baseline firing rate bias.
+    n_behavior      : Dimensionality of the behavioral output (default 2).
+    C_vel           : Velocity readout matrix (n_behavior x n_latents_true).
+                      Maps latent states to behavioral velocity via a rank-deficient
+                      random projection.
+    behavior_noise_std : Std of additive Gaussian noise on the behavioral output.
+    B_in            : Input gain matrix (n_latents_true x n_latents_true).
+                      Maps the kick vector into latent state space. Set to identity
+                      so kicks are applied directly to the Lorenz state.
+
+    direction_vec   : Fixed unit vector in latent space.
+                      All on-manifold kicks point in this single direction.
+    ortho_input_vec : Unit vector in neural space orthogonal to C.
+
+    Output files:
+    {dataset_name}.h5       : Train + validation splits for normal training.
+                            Train keys (train_*): Training trials (30% perturbed).
+                            Validation trials (30% perturbed).
+    {dataset_name}_test.h5  : Train + adaptation-test splits for evaluation.
+                            Exact same training trials (30% perturbed).
+                            Test / Adaptation trials (100% perturbed).
+
+     _epoch: array saved in the HDF5 datasets. Boolean (1 for perturbed, 0 for unperturbed) indicating whether a perturbation input/kick occurred for that trial.
+    """
+    dataset_name = "data_Synthetic_Lorenz_Offmanifold_Unidir_Kicks"
     print(f"Generating {dataset_name} (bin_sz={bin_sz_ms}ms)...")
-    out_dir = os.path.join(base_dir, f"data_{dataset_name}")
+    out_dir = os.path.join(base_dir, "..", "..", "datasets")
     os.makedirs(out_dir, exist_ok=True)
 
-    n_neurons = 200
-    n_latents_true = 3
-    n_bins = 100
-    dt = bin_sz_ms / 1000.0
+    n_neurons = 200            
+    n_latents_true = 3         
+    n_bins = 100               
+    dt = bin_sz_ms / 1000.0    
 
-    n_img_train = 1600
-    n_img_valid = 400
-    n_img_test = 400
+    n_trials_train= 1600         # number of training trials
+    n_trials_valid = 400          # number of validation trials
+    n_trials_test = 400           # number of test trials
 
     print("Initializing Global Readout Matrices...")
-    C = 1.0 * torch.randn(n_neurons, n_latents_true)
-    d = 0.0 + 0.2 * torch.randn(n_neurons)
-    C_vel = torch.eye(n_latents_true)  # torch.randn(2, n_latents_true)
-    B_in = torch.eye(n_latents_true)
+    C = 1.0 * torch.randn(n_neurons, n_latents_true)      
+    d = 0.0 + 0.2 * torch.randn(n_neurons)                
+    C_vel = torch.randn(n_behavior, n_latents_true)         
+    B_in = torch.eye(n_latents_true)                       
 
-    # --- Sample a random unit vector ONCE for the whole dataset ---
+    # All on-manifold kicks will be along this single fixed direction in latent space
     print("Sampling Fixed Unidirectional Kick Vector...")
     direction_vec = np.random.randn(n_latents_true)
     direction_vec = direction_vec / np.linalg.norm(direction_vec)
     print(f"Sampled Direction: {direction_vec}")
 
     # --- Sample another random unit vector for off-manifold input footprint ---
+    # This vector lives in neural space but is orthogonal to the column space of C,
+    # so it produces neural activity that the latent readout cannot explain.
     gen_input_vec = torch.randn(C.shape[0])
     # take pseudo-inverse, remove projection within C
     C_pinv = torch.linalg.pinv(C)
@@ -61,7 +106,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
 
     def simulate_lorenz(n_trials, perturbed_ratio=0.0):
         y_list, vel_list, z_list, u_list = [], [], [], []
-
+                                                               
         burn_in_time = 1.0
         dt_integration = 0.005
         steps_per_bin = int(dt / dt_integration)
@@ -98,21 +143,22 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
 
                 state = bin_states[-1]  # End state becomes start state for next bin
 
-                # Store Bin Stats (average over the fine steps)
+                # NOTE: averaging over fine steps: Within each time bin, the Lorenz ODE is integrated at a much finer resolution
+                # For dt_integration = 0.005s, there are 4 fine steps per 20ms bin
+                # We average those integration steps to get a single representative latent state for the bin.
                 z_bin_raw = np.mean(bin_states[:-1], axis=0)
                 z_bin_scaled = (z_bin_raw - np.array([0, 0, 25.0])) / 10.0
                 z_bin_shifted = z_bin_scaled + np.array([2, 2, 2])
                 z_tensor = torch.tensor(z_bin_shifted, dtype=torch.float32)
 
-                # Activation
                 pre_rate_activation = (
                     torch.matmul(z_tensor, C.T) + d + off_manifold_inputs
                 )
-                # clipping to prevent explosion
+
                 rate = torch.clamp(torch.exp(pre_rate_activation), max=1000.0) * dt
                 spikes = torch.poisson(rate)
 
-                vel = torch.matmul(z_tensor, C_vel.T)
+                vel = torch.matmul(z_tensor, C_vel.T) + behavior_noise_std * torch.randn(n_behavior)
 
                 trial_z.append(z_tensor)
                 trial_y.append(spikes)
@@ -120,7 +166,17 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
                 trial_u.append(torch.tensor(u_bin, dtype=torch.float32))
 
             y_list.append(torch.stack(trial_y))
-            vel_list.append(torch.stack(trial_v))
+            
+            # Apply delay to behavior if delay_bins != 0
+            v_stacked = torch.stack(trial_v)
+            if delay_bins > 0:
+                pad = v_stacked[0:1].repeat(delay_bins, 1)
+                v_stacked = torch.cat([pad, v_stacked[:-delay_bins]], dim=0)
+            elif delay_bins < 0:
+                pad = v_stacked[-1:].repeat(abs(delay_bins), 1)
+                v_stacked = torch.cat([v_stacked[abs(delay_bins):], pad], dim=0)
+            
+            vel_list.append(v_stacked)
             z_list.append(torch.stack(trial_z))
             u_list.append(torch.stack(trial_u))
 
@@ -134,30 +190,30 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
     # Generate Split Ratios
     print("Simulating Training Set (30% Perturbed)...")
     train_y, train_v, train_z, train_u = simulate_lorenz(
-        n_img_train, perturbed_ratio=0.3
+        n_trials_train, perturbed_ratio=0.3
     )
 
     print("Simulating Validation Set (30% Perturbed)...")
     valid_y, valid_v, valid_z, valid_u = simulate_lorenz(
-        n_img_valid, perturbed_ratio=0.3
+        n_trials_valid, perturbed_ratio=0.3
     )
 
     print("Simulating Test: Baseline (0% Perturbed)...")
     test_base_y, test_base_v, test_base_z, test_base_u = simulate_lorenz(
-        n_img_test, perturbed_ratio=0.0
+        n_trials_test, perturbed_ratio=0.0
     )
 
     print("Simulating Test: Adaptation (100% PERTURBED)...")
     test_adapt_y, test_adapt_v, test_adapt_z, test_adapt_u = simulate_lorenz(
-        n_img_test, perturbed_ratio=1.0
+        n_trials_test, perturbed_ratio=1.0
     )
 
     print("Simulating Test: Washout (0% Perturbed)...")
     test_wash_y, test_wash_v, test_wash_z, test_wash_u = simulate_lorenz(
-        n_img_test, perturbed_ratio=0.0
+        n_trials_test, perturbed_ratio=0.0
     )
 
-    # print some train set stats
+    # print Dataset Stats
     print("Train Set Stats:")
     print(
         f"Min/Max/Mean Firing Rate: \
@@ -176,57 +232,63 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20):
     )
 
     # Save format
-    common_data = {
-        "params": {
-            "C": C,
-            "d": d,
-            "C_vel": C_vel,
-            "B_in": B_in,
-            "direction_vec": torch.tensor(
-                direction_vec, dtype=torch.float32
-            ),  # Saving ground truth direction
-            "ortho_input_vec": torch.tensor(
-                ortho_input_vec, dtype=torch.float32
-            ),  # Saving off-manifold input vector
-        }
-    }
+    def get_is_perturbed(u):
+        return (u.abs().sum(dim=(1, 2)) > 0).numpy()
 
-    def save_split(y, v, z, u, name):
-        # Create a boolean mask of shape (n_trials, n_bins)
-        kick_mask = u.abs().sum(dim=-1) > 0
+    # Convert tensors to numpy for saving in h5
+    train_y_np = train_y.numpy()
+    valid_y_np = valid_y.numpy()
+    test_adapt_y_np = test_adapt_y.numpy()
+    
+    train_v_np = train_v.numpy()
+    valid_v_np = valid_v.numpy()
+    test_adapt_v_np = test_adapt_v.numpy()
+    
+    train_z_np = train_z.numpy()
+    valid_z_np = valid_z.numpy()
+    test_adapt_z_np = test_adapt_z.numpy()
+    
+    train_u_np = train_u.numpy()
+    valid_u_np = valid_u.numpy()
+    test_adapt_u_np = test_adapt_u.numpy()
 
-        # Create a list of lists with exact integer indices of the kicks per trial
-        kick_bins = [torch.where(mask)[0].tolist() for mask in kick_mask]
+    train_epoch = get_is_perturbed(train_u)
+    valid_epoch = get_is_perturbed(valid_u)
+    test_adapt_epoch = get_is_perturbed(test_adapt_u)
 
-        torch.save(
-            {
-                "y_obs": y,
-                "velocity": v,
-                "true_latents": z,
-                "true_inputs": u,
-                "kick_mask": kick_mask,
-                "kick_bins": kick_bins,
-                "n_neurons_obs": n_neurons,
-                "n_time_bins_enc": n_bins,
-                "is_perturbed": (
-                    u.abs().sum(dim=(1, 2)) > 0
-                ),  # Boolean tensor (n_trials,)
-                **common_data,
-            },
-            os.path.join(out_dir, f"{name}_{bin_sz_ms}ms.pt"),
-        )
+    def save_h5(filename, encod_data_valid, recon_data_valid, behavior_valid, epoch_valid, latents_valid, inputs_valid):
+        with h5py.File(filename, 'w') as h5file:
+            # Training data is consistent
+            h5file.create_dataset('train_encod_data', data=train_y_np)
+            h5file.create_dataset('train_recon_data', data=train_y_np)
+            h5file.create_dataset('train_behavior', data=train_v_np)
+            h5file.create_dataset('train_epoch', data=train_epoch)
+            h5file.create_dataset('train_true_latents', data=train_z_np)
+            h5file.create_dataset('train_true_inputs', data=train_u_np)
+            
+            # Validation/Test data may vary based on splits with different degrees of pertubation
+            h5file.create_dataset('valid_encod_data', data=encod_data_valid)
+            h5file.create_dataset('valid_recon_data', data=recon_data_valid)
+            h5file.create_dataset('valid_behavior', data=behavior_valid)
+            h5file.create_dataset('valid_epoch', data=epoch_valid)
+            h5file.create_dataset('valid_true_latents', data=latents_valid)
+            h5file.create_dataset('valid_true_inputs', data=inputs_valid)
+            
+            # Save common parameters
+            h5file.create_dataset('params/C', data=C.numpy())
+            h5file.create_dataset('params/d', data=d.numpy())
+            h5file.create_dataset('params/C_vel', data=C_vel.numpy())
+            h5file.create_dataset('params/B_in', data=B_in.numpy())
+            h5file.create_dataset('params/direction_vec', data=direction_vec)
+            h5file.create_dataset('params/ortho_input_vec', data=ortho_input_vec.numpy())
 
-    save_split(train_y, train_v, train_z, train_u, "data_train")
-    save_split(valid_y, valid_v, valid_z, valid_u, "data_valid")
+    # Standard Dataset
+    filename = os.path.join(out_dir, f"{dataset_name}.h5")
+    save_h5(filename, valid_y_np, valid_y_np, valid_v_np, valid_epoch, valid_z_np, valid_u_np)
 
-    save_split(test_base_y, test_base_v, test_base_z, test_base_u, "data_test_baseline")
-    save_split(
-        test_adapt_y, test_adapt_v, test_adapt_z, test_adapt_u, "data_test_adaptation"
-    )
-    save_split(test_wash_y, test_wash_v, test_wash_z, test_wash_u, "data_test_washout")
-
-    # Combined 'data_test' defaults to Baseline
-    save_split(test_base_y, test_base_v, test_base_z, test_base_u, "data_test")
+    # Test Dataset (Adaptation)
+    filename_test = os.path.join(out_dir, f"{dataset_name}_test.h5")
+    save_h5(filename_test, test_adapt_y_np, test_adapt_y_np, test_adapt_v_np, test_adapt_epoch, test_adapt_z_np, test_adapt_u_np)
 
     print(f"Saved {dataset_name} to {out_dir}")
 
@@ -235,6 +297,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--bin_sz", type=int, default=20)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--delay_bins", type=int, default=0, help="Number of bins to delay behavior")
+    parser.add_argument("--n_behavior", type=int, default=2, help="Behavioral output dimensionality (< n_latents_true)")
+    parser.add_argument("--behavior_noise_std", type=float, default=0.1, help="Std of Gaussian noise on behavior")
     args = parser.parse_args()
     set_seed(args.seed)
-    generate_lorenz_dataset(os.path.dirname(os.path.abspath(__file__)), args.bin_sz)
+    generate_lorenz_dataset(
+        os.path.dirname(os.path.abspath(__file__)),
+        args.bin_sz, args.delay_bins, args.n_behavior, args.behavior_noise_std
+    )

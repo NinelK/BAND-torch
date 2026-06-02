@@ -164,7 +164,7 @@ class BasicDataModule(pl.LightningDataModule):
         for data_path in data_paths:
             # Load data arrays from the file
             with h5py.File(data_path, "r") as h5file:
-                data_dict = {k: v[()] for k, v in h5file.items()}
+                data_dict = {k: v[()] for k, v in h5file.items() if not isinstance(v, h5py.Group)}
             # Reshuffle the training / validation split
             if hps.reshuffle_tv_seed is not None:
                 data_dict = reshuffle_train_valid(
