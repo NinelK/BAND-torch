@@ -434,11 +434,18 @@ for sess_id, dataset_filename in enumerate(data_paths):
         )
         for j in range(in_features):
             for i in range(out_features):
-                ax[i, j].imshow(
-                    beh_W[:, j, :, i].detach().numpy(), cmap="RdBu", vmin=-r, vmax=r
-                )
-                ax[i, j].set_xticks([])
-                ax[i, j].set_yticks([])
+                if out_features > 1:
+                    ax[i, j].imshow(
+                        beh_W[:, j, :, i].detach().numpy(), cmap="RdBu", vmin=-r, vmax=r
+                    )
+                    ax[i, j].set_xticks([])
+                    ax[i, j].set_yticks([])
+                else:
+                    ax[j].imshow(
+                        beh_W[:, j, :, 0].detach().numpy(), cmap="RdBu", vmin=-r, vmax=r
+                    )
+                    ax[j].set_xticks([])
+                    ax[j].set_yticks([])
 
         fig.savefig(f"{model_dest}/behavior_weights.png")
     else:
@@ -516,7 +523,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     ax[1, 0].set_title("controls")
 
     c = ["C0", "C1"]
-    for i in range(2):
+    for i in range(out_features):
         ax[0, 1].plot(Y_pred_0lag[trial_id][:, i], c=c[i])
         if co_dim > 0:
             ax[1, 1].plot(Y_pred_control_0lag[trial_id][:, i], c=c[i])
