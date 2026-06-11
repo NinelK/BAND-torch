@@ -241,11 +241,13 @@ for sess_id, dataset_filename in enumerate(data_paths):
     with h5py.File(dataset_filename, "r") as f:
         train_data = f["train_recon_data"][:]
         valid_data = f["valid_recon_data"][:]
-        train_inds, valid_inds = f["train_inds"][:], f["valid_inds"][:]
         valid_epoch = f["valid_epoch"][:]
-        true_train_beh = f["train_vel"][:]
-        true_valid_beh = f["valid_vel"][:]
-        true_target_direction = f["valid_target_direction"][:]
+        true_train_beh = f["train_behavior"][:]
+        true_valid_beh = f["valid_behavior"][:]
+        if "valid_target_direction" in f.keys():
+            true_target_direction = f["valid_target_direction"][:]
+        else:
+            true_target_direction = None
 
     # load model components
     if NEW_CHECKPOINT_STYLE:
@@ -473,43 +475,44 @@ for sess_id, dataset_filename in enumerate(data_paths):
     plt.ylabel("factors")
     fig.savefig(f"{model_dest}/neural_weights.png")
 
-    # Plot 2: plot ICs
+    if true_target_direction is not None:
+        # Plot 2: plot ICs
 
-    # PCA on initial conditions
-    pca = PCA(n_components=2)
-    pca.fit(train_ic)
-    ic_pca = pca.transform(ic)
-    # print(train_ic.shape,ic_pca.shape)
+        # PCA on initial conditions
+        pca = PCA(n_components=2)
+        pca.fit(train_ic)
+        ic_pca = pca.transform(ic)
+        # print(train_ic.shape,ic_pca.shape)
 
-    # t-sne on initial conditions
-    tsne = TSNE(n_components=2, perplexity=min(ic.shape[0] // 2, 30.0))
-    ic_tsne = tsne.fit_transform(ic)
+        # t-sne on initial conditions
+        tsne = TSNE(n_components=2, perplexity=min(ic.shape[0] // 2, 30.0))
+        ic_tsne = tsne.fit_transform(ic)
 
-    fig, axes = plt.subplots(1, 2, figsize=(5, 2))
-    fig.suptitle("ICs")
-    target_ids = get_target_ids(true_target_direction)
-    axes[0].scatter(*ic_pca.T, c=cm.rainbow(target_ids / target_ids.max()), s=2)
-    axes[0].set_title("PCA")
-    axes[0].set_xlabel("PC1")
-    axes[0].set_ylabel("PC2")
-    axes[1].scatter(*ic_tsne.T, c=cm.rainbow(target_ids / target_ids.max()), s=2)
-    axes[1].set_title("t-SNE")
-    axes[1].set_xlabel("t-SNE1")
-    axes[1].set_ylabel("t-SNE2")
+        fig, axes = plt.subplots(1, 2, figsize=(5, 2))
+        fig.suptitle("ICs")
+        target_ids = get_target_ids(true_target_direction)
+        axes[0].scatter(*ic_pca.T, c=cm.rainbow(target_ids / target_ids.max()), s=2)
+        axes[0].set_title("PCA")
+        axes[0].set_xlabel("PC1")
+        axes[0].set_ylabel("PC2")
+        axes[1].scatter(*ic_tsne.T, c=cm.rainbow(target_ids / target_ids.max()), s=2)
+        axes[1].set_title("t-SNE")
+        axes[1].set_xlabel("t-SNE1")
+        axes[1].set_ylabel("t-SNE2")
 
-    # add colorbar
-    sm = plt.cm.ScalarMappable(
-        cmap=cm.rainbow, norm=plt.Normalize(vmin=0, vmax=target_ids.max())
-    )
-    sm._A = []
-    fig.colorbar(sm, ax=axes, orientation="vertical")
+        # add colorbar
+        sm = plt.cm.ScalarMappable(
+            cmap=cm.rainbow, norm=plt.Normalize(vmin=0, vmax=target_ids.max())
+        )
+        sm._A = []
+        fig.colorbar(sm, ax=axes, orientation="vertical")
 
-    for ax in axes:
-        ax.axis("equal")
-        ax.set_xticks([])
-        ax.set_yticks([])
+        for ax in axes:
+            ax.axis("equal")
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-    fig.savefig(f"{model_dest}/initial_conditions.png")
+        fig.savefig(f"{model_dest}/initial_conditions.png")
 
     # Plot 3: plot factors / controls / behavior prediction for 1 example trial
 
@@ -522,7 +525,7 @@ for sess_id, dataset_filename in enumerate(data_paths):
     ax[0, 0].set_title("factors")
     ax[1, 0].set_title("controls")
 
-    c = ["C0", "C1"]
+    c = [f"C{i}" for i in range(out_features)]
     for i in range(out_features):
         ax[0, 1].plot(Y_pred_0lag[trial_id][:, i], c=c[i])
         if co_dim > 0:
@@ -597,80 +600,81 @@ for sess_id, dataset_filename in enumerate(data_paths):
 
     fig.savefig(f"{model_dest}/factors_controls_behavior.png")
 
-    # Plot 4: plot avg factors and controls per condition (BL / AD / WO)
-    for epoch, epoch_name in enumerate(EPOCH_NAMES):
-        fig = plot_avg_traj(
-            factors,
-            true_target_direction,
-            title="factor",
-            epoch_mask=(valid_epoch == epoch),
-        )
-        fig.savefig(f"{model_dest}/avg_factors_{epoch_name}.png")
-        if co_dim > 0:
+    if true_target_direction is not None:
+        # Plot 4: plot avg factors and controls per condition (BL / AD / WO)
+        for epoch, epoch_name in enumerate(EPOCH_NAMES):
             fig = plot_avg_traj(
-                noci_factors,
+                factors,
                 true_target_direction,
-                title="factor with no CI",
+                title="factor",
                 epoch_mask=(valid_epoch == epoch),
             )
-            fig.savefig(f"{model_dest}/avg_noci_factors_{epoch_name}.png")
-            fig = plot_avg_traj(
-                controls,
-                true_target_direction,
-                title="control",
-                epoch_mask=(valid_epoch == epoch),
-                sharey=True,
-            )
-            fig.savefig(f"{model_dest}/avg_controls_{epoch_name}.png")
+            fig.savefig(f"{model_dest}/avg_factors_{epoch_name}.png")
+            if co_dim > 0:
+                fig = plot_avg_traj(
+                    noci_factors,
+                    true_target_direction,
+                    title="factor with no CI",
+                    epoch_mask=(valid_epoch == epoch),
+                )
+                fig.savefig(f"{model_dest}/avg_noci_factors_{epoch_name}.png")
+                fig = plot_avg_traj(
+                    controls,
+                    true_target_direction,
+                    title="control",
+                    epoch_mask=(valid_epoch == epoch),
+                    sharey=True,
+                )
+                fig.savefig(f"{model_dest}/avg_controls_{epoch_name}.png")
 
-    fig = plot_avg_traj(factors, true_target_direction, title="factor")
-    fig.savefig(f"{model_dest}/avg_factors.png")
-    if co_dim > 0:
-        fig = plot_avg_traj(
-            noci_factors, true_target_direction, title="factor with no CI"
-        )
-        fig.savefig(f"{model_dest}/avg_noci_factors.png")
-        fig = plot_avg_traj(controls, true_target_direction, title="control")
-        fig.savefig(f"{model_dest}/avg_controls.png")
-
-    # Plot 5. Plot behavior prediction
-    dir_index = np.array(
-        [sorted(set(true_target_direction)).index(i) for i in true_target_direction]
-    )
-    avg_vel = np.empty_like(true_valid_beh)
-    for d in range(np.max(dir_index) + 1):
-        mask = d == dir_index
-        avg_vel[mask] = true_valid_beh[mask].mean(0)
-    for epoch2plot, epoch_name in enumerate(EPOCH_NAMES):
-        trials2plot = get_trials2plot(
-            true_valid_beh, avg_vel, dir_index, valid_epoch, epoch2plot=epoch2plot
-        )  # trials with max distance from avg vel
-        plot_beh_pred(
-            true_valid_beh,
-            Y_pred_seq2seq,
-            dir_index,
-            trials2plot,
-            f"{model_dest}/beh_prediction_{epoch_name}.png",
-        )
-        plot_beh_pred(
-            true_valid_beh,
-            Y_pred_seq2seq,
-            dir_index,
-            trials2plot,
-            f"{model_dest}/beh_prediction_{epoch_name}.svg",
-        )
+        fig = plot_avg_traj(factors, true_target_direction, title="factor")
+        fig.savefig(f"{model_dest}/avg_factors.png")
         if co_dim > 0:
+            fig = plot_avg_traj(
+                noci_factors, true_target_direction, title="factor with no CI"
+            )
+            fig.savefig(f"{model_dest}/avg_noci_factors.png")
+            fig = plot_avg_traj(controls, true_target_direction, title="control")
+            fig.savefig(f"{model_dest}/avg_controls.png")
+
+        # Plot 5. Plot behavior prediction
+        dir_index = np.array(
+            [sorted(set(true_target_direction)).index(i) for i in true_target_direction]
+        )
+        avg_vel = np.empty_like(true_valid_beh)
+        for d in range(np.max(dir_index) + 1):
+            mask = d == dir_index
+            avg_vel[mask] = true_valid_beh[mask].mean(0)
+        for epoch2plot, epoch_name in enumerate(EPOCH_NAMES):
+            trials2plot = get_trials2plot(
+                true_valid_beh, avg_vel, dir_index, valid_epoch, epoch2plot=epoch2plot
+            )  # trials with max distance from avg vel
             plot_beh_pred(
                 true_valid_beh,
-                Y_pred_noci_seq2seq,
+                Y_pred_seq2seq,
                 dir_index,
                 trials2plot,
-                f"{model_dest}/beh_prediction_noci_{epoch_name}.png",
+                f"{model_dest}/beh_prediction_{epoch_name}.png",
             )
             plot_beh_pred(
                 true_valid_beh,
-                Y_pred_noci_seq2seq,
+                Y_pred_seq2seq,
                 dir_index,
                 trials2plot,
-                f"{model_dest}/beh_prediction_noci_{epoch_name}.svg",
+                f"{model_dest}/beh_prediction_{epoch_name}.svg",
             )
+            if co_dim > 0:
+                plot_beh_pred(
+                    true_valid_beh,
+                    Y_pred_noci_seq2seq,
+                    dir_index,
+                    trials2plot,
+                    f"{model_dest}/beh_prediction_noci_{epoch_name}.png",
+                )
+                plot_beh_pred(
+                    true_valid_beh,
+                    Y_pred_noci_seq2seq,
+                    dir_index,
+                    trials2plot,
+                    f"{model_dest}/beh_prediction_noci_{epoch_name}.svg",
+                )
