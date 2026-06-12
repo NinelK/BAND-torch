@@ -17,6 +17,7 @@ OmegaConf.register_new_resolver(
     "relpath", lambda p: str(Path(f"{parent_path}/scripts/").parent / p)
 )
 
+NEW_CHECKPOINT_STYLE = True  # whether to look for checkpoints in best_model or lightning_checkpoints, should be True for all new runs
 PROJECT_STR = sys.argv[1]
 MODEL_STR = sys.argv[2]
 DATASET_STR = sys.argv[3]
@@ -68,7 +69,7 @@ with hydra.initialize(
 datamodule = instantiate(config.datamodule, _convert_="all")
 model = instantiate(config.model)
 
-if ("pbt" in PROJECT_STR) or ("ext" in PROJECT_STR):
+if NEW_CHECKPOINT_STYLE:
     # check the latest checkpoint
     checkpoint_folders = glob(model_dest + "/best_model/checkpoint*")
     ckpt_path = checkpoint_folders[-1] + "/tune.ckpt"
@@ -100,7 +101,7 @@ for s in range(len(data_paths)):
 
     # placing the output file in the right folder, assuming recording had a single session
     filename_source = filename_source.split(".")[0] + f"_{session}.h5"
-    if "pbt" in PROJECT_STR:
+    if NEW_CHECKPOINT_STYLE:
         os.replace(
             parent_path + "/" + filename_source, model_dest + "/best_model/" + filename
         )

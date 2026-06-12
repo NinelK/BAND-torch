@@ -163,3 +163,4 @@ notebooks/COSYNE/
 notebooks/pre/PyalData/
 
 wandb/
+data/000127/sub-Han/sub-Han_desc-train_behavior+ecephys.nwb
