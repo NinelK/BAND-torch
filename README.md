@@ -25,11 +25,9 @@ pre-commit install
 # Run synthetic examples
 1. Generate spike data from a system with a latent Lorenz attractor:
 `python ./scripts/lorenz/generate_lorenz.py`
-2. Convert the output to a dataset expected by BAND as input
-`python ./scripts/lorenz/merge_dataset_4_BAND.py`
-3. Run CSAE and BAND:
+2. Run CSAE and BAND:
 `sh ./scripts/tune_synthetic_datasets.sh`
-4. Analyse the results:
+3. Analyse the results:
 `./notebooks/post/compare_pairs.ipynb`
 
 # Notes on fixing problems

@@ -5,15 +5,15 @@ encod_data_dim: 200
 encod_seq_len: 100
 recon_seq_len: 100
 ext_input_dim: 0
-ic_enc_seq_len: 25
+ic_enc_seq_len: 0
 ic_enc_dim: 64
 ci_enc_dim: 64
 ci_lag: 1
 con_dim: 64
-co_dim: 4
+co_dim: 2
 ic_dim: 64 # 50 in autoband paper
 gen_dim: 200
-fac_dim: 20
+fac_dim: 8
 causal_con: True
 perturb_time: -1
 
@@ -29,7 +29,7 @@ readout:
 behavior_readout:
   _target_: lfads_torch.modules.readin_readout.FanInSeq2Seq
   in_features: ${model.fac_dim}
-  out_features: 3
+  out_features: 2
   time_features: ${model.encod_seq_len}
   dropout_rate: 0.5
 
