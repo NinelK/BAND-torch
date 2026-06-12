@@ -38,6 +38,8 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
     n_neurons       : Number of simulated neurons (channels in the spiking data).
     n_latents_true  : Dimensionality of the true latent Lorenz system (always 3).
     n_bins          : Number of time bins per trial.
+    delay_bins > 0  : Behavior lags latents (neural activity leads movement).
+    delay_bins < 0  : Behavior leads latents (movement leads neural activity).
     dt              : Duration of each time bin in seconds.
     C               : Neural readout matrix (n_neurons x n_latents_true).
                       Maps latent states to log-firing rates.
@@ -70,14 +72,17 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
     out_dir = os.path.join(base_dir, "..", "..", "datasets")
     os.makedirs(out_dir, exist_ok=True)
 
-    n_neurons = 200            
+    n_neurons = 50            
     n_latents_true = 3         
     n_bins = 100               
     dt = bin_sz_ms / 1000.0    
 
-    n_trials_train= 1600         # number of training trials
-    n_trials_valid = 400          # number of validation trials
-    n_trials_test = 400           # number of test trials
+    n_trials_train= 200         # number of training trials
+    n_trials_valid = 200          # number of validation trials
+    n_trials_test = 200           # number of test trials
+    delay_bins = 5                # number of time bins to delay the input
+
+
 
     print("Initializing Global Readout Matrices...")
     C = 1.0 * torch.randn(n_neurons, n_latents_true)      
@@ -113,8 +118,9 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
 
         kick_prob = 0.05
         kick_magnitude = 5.0
-        off_manifold_kick_magnitude = 5.0
+        off_manifold_kick_magnitude = 20.0
         n_inputs = n_latents_true
+        n_bins_sim = n_bins + abs(delay_bins)
 
         for _ in range(n_trials):
             # Check if this specific trial is allowed to have kicks
@@ -127,7 +133,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
 
             trial_z, trial_y, trial_v, trial_u = [], [], [], []
 
-            for b in range(n_bins):
+            for b in range(n_bins_sim):
                 u_bin = np.zeros(n_inputs)
                 off_manifold_inputs = torch.zeros(n_neurons)
 
@@ -165,20 +171,27 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
                 trial_v.append(vel)
                 trial_u.append(torch.tensor(u_bin, dtype=torch.float32))
 
-            y_list.append(torch.stack(trial_y))
-            
-            # Apply delay to behavior if delay_bins != 0
+            y_stacked = torch.stack(trial_y)
             v_stacked = torch.stack(trial_v)
-            if delay_bins > 0:
-                pad = v_stacked[0:1].repeat(delay_bins, 1)
-                v_stacked = torch.cat([pad, v_stacked[:-delay_bins]], dim=0)
-            elif delay_bins < 0:
-                pad = v_stacked[-1:].repeat(abs(delay_bins), 1)
-                v_stacked = torch.cat([v_stacked[abs(delay_bins):], pad], dim=0)
-            
-            vel_list.append(v_stacked)
-            z_list.append(torch.stack(trial_z))
-            u_list.append(torch.stack(trial_u))
+            z_stacked = torch.stack(trial_z)
+            u_stacked = torch.stack(trial_u)
+
+            if delay_bins >= 0:
+                y_sliced = y_stacked[delay_bins : delay_bins + n_bins]
+                z_sliced = z_stacked[delay_bins : delay_bins + n_bins]
+                u_sliced = u_stacked[delay_bins : delay_bins + n_bins]
+                v_sliced = v_stacked[0 : n_bins]
+            else:
+                abs_delay = abs(delay_bins)
+                y_sliced = y_stacked[0 : n_bins]
+                z_sliced = z_stacked[0 : n_bins]
+                u_sliced = u_stacked[0 : n_bins]
+                v_sliced = v_stacked[abs_delay : abs_delay + n_bins]
+
+            y_list.append(y_sliced)
+            vel_list.append(v_sliced)
+            z_list.append(z_sliced)
+            u_list.append(u_sliced)
 
         return (
             torch.stack(y_list),
