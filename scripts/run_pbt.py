@@ -4,6 +4,7 @@ import shutil
 # from datetime import datetime
 import sys
 from pathlib import Path
+from glob import glob
 
 from ray import tune
 from ray.tune import CLIReporter
@@ -27,7 +28,7 @@ co_dim = sys.argv[7]
 cpus = 3
 
 RUN_DIR = (
-    Path("./runs") / PROJECT_STR / DATASET_STR / RUN_TAG
+    Path("/disk/scratch/nkudryas/BAND-torch/runs") / PROJECT_STR / DATASET_STR / RUN_TAG
 )
 
 fold = None
@@ -92,7 +93,7 @@ if sys.argv[9] == "False":
     mandatory_overrides["model.causal_con"] = False
     print("Running an acausal model (no split, no causality)")
 
-RUN_DIR.mkdir(parents=True, exist_ok=True)
+RUN_DIR.mkdir(parents=True)
 # Copy this script into the run directory
 shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
 # Run the hyperparameter search
@@ -119,7 +120,7 @@ analysis = tune.run(
         min_improvement_ratio=5e-4,
     ),
     config={**mandatory_overrides, **init_space},
-    resources_per_trial=dict(cpu=cpus, gpu=0.1),
+    resources_per_trial=dict(cpu=cpus, gpu=0.2),
     num_samples=num_trials,
     local_dir=RUN_DIR.parent.as_posix(),
     search_alg=BasicVariantGenerator(random_state=0),

@@ -1,7 +1,7 @@
 _target_: lfads_torch.band_model.BAND
 
 # --------- architecture --------- #
-encod_data_dim: 200
+encod_data_dim: 50
 encod_seq_len: 100
 recon_seq_len: 100
 ext_input_dim: 0

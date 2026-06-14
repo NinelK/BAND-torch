@@ -67,7 +67,15 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
 
      _epoch: array saved in the HDF5 datasets. Boolean (1 for perturbed, 0 for unperturbed) indicating whether a perturbation input/kick occurred for that trial.
     """
-    dataset_name = "data_Synthetic_Lorenz_Offmanifold_Unidir_Kicks"
+
+    delay_bins = -5                # number of time bins to delay the input
+    
+    if delay_bins>0:
+        dataset_name = f"data_Synthetic_Lorenz_forward"
+    elif delay_bins==0:
+        dataset_name = f"data_Synthetic_Lorenz_0"
+    else:
+        dataset_name = f"data_Synthetic_Lorenz_feedback"
     print(f"Generating {dataset_name} (bin_sz={bin_sz_ms}ms)...")
     out_dir = os.path.join(base_dir, "..", "..", "datasets")
     os.makedirs(out_dir, exist_ok=True)
@@ -80,7 +88,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
     n_trials_train= 200         # number of training trials
     n_trials_valid = 200          # number of validation trials
     n_trials_test = 200           # number of test trials
-    delay_bins = 5                # number of time bins to delay the input
+    
 
 
 
