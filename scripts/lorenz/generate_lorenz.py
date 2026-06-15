@@ -22,7 +22,7 @@ def lorenz_dynamics(state, t, sigma=10.0, rho=28.0, beta=8.0 / 3.0):
     return [dxdt, dydt, dzdt]
 
 
-def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, behavior_noise_std=0.1):
+def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, behavior_noise_std=0.1):
     """
     Synthetic Lorenz attractor dataset for BAND training & evaluation.
 
@@ -68,14 +68,14 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
      _epoch: array saved in the HDF5 datasets. Boolean (1 for perturbed, 0 for unperturbed) indicating whether a perturbation input/kick occurred for that trial.
     """
 
-    delay_bins = -5                # number of time bins to delay the input
+    delay_bins = -10                # number of time bins to delay the input
     
     if delay_bins>0:
-        dataset_name = f"data_Synthetic_Lorenz_forward"
+        dataset_name = f"data_Synthetic_Lorenz_forward_{np.abs(delay_bins)}"
     elif delay_bins==0:
         dataset_name = f"data_Synthetic_Lorenz_0"
     else:
-        dataset_name = f"data_Synthetic_Lorenz_feedback"
+        dataset_name = f"data_Synthetic_Lorenz_feedback_{np.abs(delay_bins)}"
     print(f"Generating {dataset_name} (bin_sz={bin_sz_ms}ms)...")
     out_dir = os.path.join(base_dir, "..", "..", "datasets")
     os.makedirs(out_dir, exist_ok=True)
@@ -88,9 +88,6 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
     n_trials_train= 200         # number of training trials
     n_trials_valid = 200          # number of validation trials
     n_trials_test = 200           # number of test trials
-    
-
-
 
     print("Initializing Global Readout Matrices...")
     C = 1.0 * torch.randn(n_neurons, n_latents_true)      
@@ -316,7 +313,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=20, delay_bins=0, n_behavior=2, 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bin_sz", type=int, default=20)
+    parser.add_argument("--bin_sz", type=int, default=10)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--delay_bins", type=int, default=0, help="Number of bins to delay behavior")
     parser.add_argument("--n_behavior", type=int, default=2, help="Behavioral output dimensionality (< n_latents_true)")
