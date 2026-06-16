@@ -127,10 +127,9 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
         kick_prob = 0.05
         kick_magnitude = 5.0
         off_manifold_kick_magnitude = 20.0
-        beh_input_history_weight = 0.2
+        beh_input_weight = 0.2
         n_inputs = 1
         n_bins_sim = n_bins + 2*max_delay_bins
-        u_bin_history = np.zeros(n_inputs)
 
         for _ in range(n_trials):
             # Check if this specific trial is allowed to have kicks
@@ -152,7 +151,6 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
                     u_bin += kick_magnitude
                     state = state + (B_in.numpy() @ (direction_vec * u_bin))
                     off_manifold_inputs = ortho_input_vec * off_manifold_kick_magnitude
-                u_bin_history += u_bin
 
                 # Integrating bin with odeint
                 t_bin = np.linspace(0, dt, steps_per_bin + 1)
@@ -175,7 +173,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
                 rate = torch.clamp(torch.exp(pre_rate_activation), max=1000.0) * dt
                 spikes = torch.poisson(rate)
 
-                vel = torch.matmul(torch.concat([z_tensor,beh_input_history_weight*torch.tensor(u_bin_history, dtype=torch.float32)]), C_vel.T) + behavior_noise_std * torch.randn(n_behavior)
+                vel = torch.matmul(torch.concat([z_tensor,beh_input_weight*torch.tensor(u_bin, dtype=torch.float32)]), C_vel.T) + behavior_noise_std * torch.randn(n_behavior)
 
                 trial_z.append(z_tensor)
                 trial_y.append(spikes)
