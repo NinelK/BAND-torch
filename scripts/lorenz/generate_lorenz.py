@@ -68,21 +68,24 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
      _epoch: array saved in the HDF5 datasets. Boolean (1 for perturbed, 0 for unperturbed) indicating whether a perturbation input/kick occurred for that trial.
     """
 
-    delay_bins = -10                # number of time bins to delay the input
+    # delay_bins = -10                # number of time bins to delay the input
     
     if delay_bins>0:
-        dataset_name = f"data_Synthetic_Lorenz_forward_{np.abs(delay_bins)}"
+        dataset_name = f"data_Synthetic_Lorenz_beh_forward_{np.abs(delay_bins)}"
     elif delay_bins==0:
-        dataset_name = f"data_Synthetic_Lorenz_0"
+        dataset_name = f"data_Synthetic_Lorenz_beh_0"
     else:
-        dataset_name = f"data_Synthetic_Lorenz_feedback_{np.abs(delay_bins)}"
+        dataset_name = f"data_Synthetic_Lorenz_beh_feedback_{np.abs(delay_bins)}"
+
     print(f"Generating {dataset_name} (bin_sz={bin_sz_ms}ms)...")
     out_dir = os.path.join(base_dir, "..", "..", "datasets")
     os.makedirs(out_dir, exist_ok=True)
 
     n_neurons = 50            
     n_latents_true = 3         
-    n_bins = 100               
+    n_bins = 100         
+    max_delay_bins = 20    
+    assert np.abs(delay_bins)<=max_delay_bins  
     dt = bin_sz_ms / 1000.0    
 
     n_trials_train= 200         # number of training trials
@@ -92,19 +95,19 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
     print("Initializing Global Readout Matrices...")
     C = 1.0 * torch.randn(n_neurons, n_latents_true)      
     d = 0.0 + 0.2 * torch.randn(n_neurons)                
-    C_vel = torch.randn(n_behavior, n_latents_true)         
+    C_vel = torch.randn(n_behavior, n_latents_true+1)         
     B_in = torch.eye(n_latents_true)                       
 
     # All on-manifold kicks will be along this single fixed direction in latent space
     print("Sampling Fixed Unidirectional Kick Vector...")
-    direction_vec = np.random.randn(n_latents_true)
+    direction_vec = torch.randn(n_latents_true).numpy()
     direction_vec = direction_vec / np.linalg.norm(direction_vec)
     print(f"Sampled Direction: {direction_vec}")
 
     # --- Sample another random unit vector for off-manifold input footprint ---
     # This vector lives in neural space but is orthogonal to the column space of C,
     # so it produces neural activity that the latent readout cannot explain.
-    gen_input_vec = torch.randn(C.shape[0])
+    gen_input_vec = torch.randn(C.shape[0]) # whole space
     # take pseudo-inverse, remove projection within C
     C_pinv = torch.linalg.pinv(C)
     ortho_input_vec = gen_input_vec - C @ C_pinv @ gen_input_vec
@@ -124,8 +127,10 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
         kick_prob = 0.05
         kick_magnitude = 5.0
         off_manifold_kick_magnitude = 20.0
-        n_inputs = n_latents_true
-        n_bins_sim = n_bins + abs(delay_bins)
+        beh_input_history_weight = 0.2
+        n_inputs = 1
+        n_bins_sim = n_bins + 2*max_delay_bins
+        u_bin_history = np.zeros(n_inputs)
 
         for _ in range(n_trials):
             # Check if this specific trial is allowed to have kicks
@@ -144,9 +149,10 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
 
                 # Apply Kick
                 if is_perturbed_trial and (np.random.rand() < kick_prob):
-                    u_bin = direction_vec * kick_magnitude
-                    state = state + (B_in.numpy() @ u_bin)
+                    u_bin += kick_magnitude
+                    state = state + (B_in.numpy() @ (direction_vec * u_bin))
                     off_manifold_inputs = ortho_input_vec * off_manifold_kick_magnitude
+                u_bin_history += u_bin
 
                 # Integrating bin with odeint
                 t_bin = np.linspace(0, dt, steps_per_bin + 1)
@@ -169,7 +175,7 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
                 rate = torch.clamp(torch.exp(pre_rate_activation), max=1000.0) * dt
                 spikes = torch.poisson(rate)
 
-                vel = torch.matmul(z_tensor, C_vel.T) + behavior_noise_std * torch.randn(n_behavior)
+                vel = torch.matmul(torch.concat([z_tensor,beh_input_history_weight*torch.tensor(u_bin_history, dtype=torch.float32)]), C_vel.T) + behavior_noise_std * torch.randn(n_behavior)
 
                 trial_z.append(z_tensor)
                 trial_y.append(spikes)
@@ -181,17 +187,11 @@ def generate_lorenz_dataset(base_dir, bin_sz_ms=10, delay_bins=0, n_behavior=2, 
             z_stacked = torch.stack(trial_z)
             u_stacked = torch.stack(trial_u)
 
-            if delay_bins >= 0:
-                y_sliced = y_stacked[delay_bins : delay_bins + n_bins]
-                z_sliced = z_stacked[delay_bins : delay_bins + n_bins]
-                u_sliced = u_stacked[delay_bins : delay_bins + n_bins]
-                v_sliced = v_stacked[0 : n_bins]
-            else:
-                abs_delay = abs(delay_bins)
-                y_sliced = y_stacked[0 : n_bins]
-                z_sliced = z_stacked[0 : n_bins]
-                u_sliced = u_stacked[0 : n_bins]
-                v_sliced = v_stacked[abs_delay : abs_delay + n_bins]
+            
+            y_sliced = y_stacked[max_delay_bins : max_delay_bins + n_bins]
+            z_sliced = z_stacked[max_delay_bins : max_delay_bins + n_bins]
+            u_sliced = u_stacked[max_delay_bins : max_delay_bins + n_bins]
+            v_sliced = v_stacked[max_delay_bins - delay_bins : max_delay_bins - delay_bins + n_bins]
 
             y_list.append(y_sliced)
             vel_list.append(v_sliced)
