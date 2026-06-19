@@ -24,7 +24,9 @@ pre-commit install
 
 # Run synthetic examples
 1. Generate spike data from a system with a latent Lorenz attractor:
-`python ./scripts/lorenz/generate_lorenz.py`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10`
 2. Run CSAE and BAND:
 `sh ./scripts/tune_synthetic_datasets.sh`
 3. Analyse the results:
