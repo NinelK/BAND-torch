@@ -33,6 +33,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# DPAD-related
+.p.*
+.p
+selectedMethodCode*.txt
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -155,7 +160,7 @@ dmypy.json
 configs/model/*
 configs/datamodule/*
 ComputationThruDynamicsBenchmark/
-datasets/Tauriel/     
+datasets/Tauriel/
 results_no_excl_trials/
 
 notebooks/COSYNE/
