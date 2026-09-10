@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import transforms
+from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 def panel_specs(layout, fig=None, gridspec_args={}):
     # default arguments
@@ -53,7 +54,10 @@ def label_panel(ax, letter, *,
     # (which is (0, 1) in ax.transAxes transformation space)
     fig = ax.figure
     trans = ax.transAxes + transforms.ScaledTranslation(-offset_left, offset_up, fig.dpi_scale_trans)
-    ax.text(0, 1, prefix+letter+postfix, transform=trans, **kwds)
+    if type(ax) == plt.Axes:
+        ax.text(0, 1, prefix+letter+postfix, transform=trans, **kwds)
+    elif type(ax) == Axes3D:
+        ax.text2D(0, 1, prefix+letter+postfix, transform=trans, **kwds)
 
 def label_panels(axes, letters=None, **kwds):
     if letters is None:

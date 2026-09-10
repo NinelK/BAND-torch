@@ -22,6 +22,16 @@ pip install -e .
 pre-commit install
 ```
 
+# Run synthetic examples
+1. Generate spike data from a system with a latent Lorenz attractor:
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10`
+2. Run CSAE and BAND:
+`sh ./scripts/tune_synthetic_datasets.sh`
+3. Analyse the results:
+`./notebooks/post/compare_pairs.ipynb`
+
 # Notes on fixing problems
 
 To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this library in your env, e.g.:
@@ -36,8 +46,10 @@ downgrade numpy < 2
 `pip install numpy==1.26.0 scikit-learn==1.3.0`
 basically, `import sklearn` won't work without these downgrades. Until sklearn can't be imported, BAND will throw confusing hydra-related errors.
 
-Backward compatibility for loading older models with newer PyTorch:
+Backward compatibility for newer PyTorch:
 `export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1`
+
+# slurm notes
 
 
 Monitor the progress with:
@@ -45,3 +57,132 @@ Monitor the progress with:
 2. checking tail of the log files in `~/slurm_logs/`; try `tail -f ~/slurm_logs/<yourlog>` to watch it live.
 more useful commands [here](https://github.com/cdt-data-science/cluster-scripts)
 
+clone BAND-torch there
+
+(if not the first time using slurm server, then just connect and start here:
+`ssh ${USER}@mlp.inf.ed.ac.uk` )
+
+pull `*.h5` datasets into `~/experiments/BAND-torch/datasets` (from whereever you have them, AFS or another server on the network)
+e.g.
+`scp bruichladdich:/disk/scratch2/nkudryas/BAND-torch/datasets/multi* ~/experiments/BAND-torch/datasets/`
+
+also copy all the relevant configs for these datasets and the models you plan to run (in `~/experiments/BAND-torch/configs`)
+  (either on the head node, since only that one has internet on MLP, or in an interactive session)
+`scp -r bruichladdich:/disk/scratch2/nkudryas/BAND-torch/configs ~/experiments/BAND-torch/`
+
+Even better though, prepare all code/configs in advance, push to a github branch, and pull them to the GPGPU slurm server. You'll need:
+1. Model and datamodule configs
+2. `scripts/run_<smth>.py`
+3. updates `scripts/slurm/gen_experiment.py` to generate a new experiment.txt file for many parallel runs (e.g. multiple independent datasets or hyperparameter sets), if needed; or just 1 command to run a single script above (i.e. 1 line of experiment.txt). This line typically looks like:
+`python scripts/run_pbt.py ${model} ${dataset} ${output_folder_name} ${T} ${fac_dim} ${co_dim} ${enc_dim} ${bw}`
+But the run script can be customized to take more or less parameters.
+It is a good idea to run LFADS & BAND in parallel, e.g. make the following experiment.txt file:
+```
+python scripts/run_pbt.py ${model} ${dataset} lfads_${output_folder_name} ${T} ${fac_dim} ${co_dim} ${enc_dim} 0.0
+python scripts/run_pbt.py ${model} ${dataset} band_${output_folder_name} ${T} ${fac_dim} ${co_dim} ${enc_dim} 0.01
+```
+(with all the variables filled in with actual numerical values)
+Then, the `run experiment` command will run both LFADS and BAND in parallel (see instructions below).
+
+test if BAND runs:
+  1. create an interactive session
+  `srun --time=08:00:00 --mem=14000 --cpus-per-task=8 --gres=gpu:4 --pty bash`
+  2. set up a micromamba environment (following the installation guidelines); if no internet connection on allocated server -- set up on the node. I set them up in `~/mamba_envs/` (on DFS).
+  2. create `/disk/scratch/{USER}/BAND-torch`
+  3. create `/disk/scratch/{USER}/BAND-torch/datasets` and copy relevant datasets there
+  4. run `python scripts/run_pbt_slurm.py ....` with some relevant attribute (example in any line of `scripts/slurm/experiment.txt`)
+  5. don't forget to copy runs back into `~/experiments/BAND-torch/runs/` before closing the session (if you train this until the end want to keep the result)
+
+For parallel runs, use:
+  1. `python scripts/slurm/gen_experiment.py` to generate a new experiment.txt file
+  2. `run_experiment -b scripts/slurm/band_arrayjob.sh -e scripts/slurm/experiment.txt`
+
+To use `run_experiment` don't forget to install clusterscripts before the first run, e.g.
+```
+echo 'export PATH=/home/$USER/git/cluster-scripts/experiments:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Monitor the progress with:
+1. `myjobs`
+2. checking tail of the log files in `~/slurm_logs/`; try `tail -f ~/slurm_logs/<yourlog>` to watch it live.
+more useful commands [here](https://github.com/cdt-data-science/cluster-scripts)
+
+# Note on hyperparameter scaling
+
+1. Switched recon_reduce_mean=False  (True by default). This means that when calculating neural reconstruction, LFADS takes the sum over log_likelihoods over time and neurons. Correct me if I'm wrong, but we are supposed to be treating all data points and neurons as independent observable variables, so the total log-likelihood should be a sum (not mean).
+2. Switched loss_scale=1.0 (10^4 by default). No need for it anymore, because log_likelihood is 4 orders of magnitude bigger.
+3. After these 2 steps KL beta = 1 should actually mean KL beta = 1. Note that for the controller, the term is average over timepoints, while it should be sum over timepoints.
+
+# Concerns
+1. yaml pre-commit does not run
+2. torch version used by LFADS is 1.13.1, while 2.1.1 is the latest
+3. attr keys and batch keys -- what is the difference? (seems like attr are trial attributes for post training analysis, while batch keys are passed to every batch)
+4. Looks like KL priors are not logged. E.g. if we swap AR for independent prior, it is not recorded afaik
+
+# Basic Walkthrough
+## DataModule Configuration
+The first step in applying `band-torch` to your dataset is to prepare your preprocessed data files. We recommend saving your data as `n_samples x n_timesteps x n_channels` arrays in the HDF5 format using the following keys:
+- `train_encod_data`: Data to be used as input when training the model.
+- `train_recon_data`: Data to be used as a reconstruction target when training the model.
+- `valid_encod_data`: Data to be used as input when validating the model.
+- `valid_recon_data`: Data to be used as a reconstruction target when validating the model.
+
+Note that for both training and validation data, `encod_data` may be the same as `recon_data`, but they can be different to allow prediction of held out neurons or time steps.
+
+Create a new configuration file for your dataset (e.g. `configs/datamodule/my_datamodule.yaml`). Note that `datafile_pattern` can be a `glob`-style pattern to accommodate multisession runs, but may only match a single file.
+```
+_target_: band_torch.datamodules.BasicDataModule
+data_paths:
+  - <PATH-TO-HDF5-FILE>
+batch_size: <YOUR-BATCH-SIZE>
+```
+
+We also provide preprocessed example data files from the Neural Latents Benchmark in `datasets`. With [`nlb_tools`](https://github.com/neurallatents/nlb_tools) installed in your environment, you can additionally use the `NLBEvaluation` extension to monitor NLB metrics while training `band-torch` models.
+
+## Model Configuration
+Next, you'll need to create a model configuration file that defines the architecture of your LFADS model (e.g. `configs/model/my_model.yaml`). We recommend starting with a copy of the `configs/model/nlb_mc_maze.yaml` file. At the least, you'll need to specify the following values in this file with the parameters of your dataset:
+- `encod_data_dim`: The `n_channels` dimension of `encod_data` from your data file.
+- `encod_seq_len`: The `n_timesteps` dimension of `encod_data` from your data file.
+- `recon_seq_len`: The `n_timesteps` dimension of `recon_data` from your data file.
+- `readout.modules.0.out_features`: The `n_channels` dimension of `recon_data` from your data file.
+
+While this is an easy way to get up and running with LFADS relatively quickly, these default hyperparameters are unlikely to be the best ones for your particular dataset. We recommend sweeping over architecture and regularization hyperparameters in order to maximize performance.
+
+## Training a Model
+To train a single model on your dataset, start with the `scripts/run_single.py` script. Edit the path specified by `RUN_DIR` to your desired model directory and edit the `overrides` argument to `run_model` to the following:
+```
+overrides={
+    "datamodule": "my_datamodule",
+    "model": "my_model",
+}
+```
+This will tell `band-torch` to use the custom datamodule and model configurations you just defined. Running this script in your `band-torch` environment should begin optimizing a single model on your GPU if it is available. Logs and checkpoints will be saved in the model directory, and model outputs will be saved in `band_output_sess{i}.h5` when training is complete. Feel free to inspect `configs/single.yaml` and `configs/callbacks` to experiment with different `Trainer` arguments, alternative loggers and callbacks, and more.
+
+As a next step, try specifying a random search in `scripts/run_multi.py` or a population-based training run in `scripts/run_pbt.py` and running a large-scale sweep to identify high-performing hyperparameters for your dataset!
+
+# Advanced Usage
+`band-torch` is designed to be modular in order to easily adapt to a wide variety of use cases. At the core of this modularity is the use of composable configuration files via Hydra [11]. User-defined objects can be substituted anywhere in the framework by simply modifying a `_target_` key and its associated arguments. In this section, we draw attention to some of the more significant opportunities that this modularity provides.
+
+## Modular Reconstruction
+Reconstruction losses play a key role in enabling LFADS to model the data distribution across data modalities. In the original model, a Poisson reconstruction trains the model to infer firing rates underlying binned spike counts. In subsequent extensions of LFADS, Gamma and Zero-Inflated Gamma distributions have been used to model EMG and calcium imaging datasets [5, 6]. In `band-torch`, we provide implementations of Poisson, Gaussian, Gamma, and Zero-Inflated Gamma reconstruction costs and allow the user to easily define their own reconstructions. These can be easily selected using the `reconstruction` argument in the model configuration.
+
+## Modular Augmentations
+Data augmentation is a particularly effective tool for training LFADS models. In particular, augmentations that act on both the input data and the reconstruction cost gradients have endowed the model with resistance to identity overfitting (coordinated dropout [3, 4]) and the ability to infer firing rates with spatiotemporal superresolution (selective backpropagation through time [6, 7]). Other augmentations can be used to reduce the impact of correlated noise [5]. In `band-torch`, we provide a simple interface for applying data augmentations via the `AugmentationStack` class. At a high level, the user creates the object by passing in a list of transformations and specifying the order in which they should be applied to the data batch, the loss tensor, or both. Separate `AugmentationStack`s are applied automatically by the `LFADS` object during training and inference, making it much easier to experiment with new augmentation strategies.
+
+## Modular Priors
+The LFADS model computes KL penalties between posteriors and priors for both initial condition and inferred input distributions, which are added to the reconstruction cost in the variational ELBO. In the original implementation, priors were multivariate normal and autoregressive multivariate normal for the initial condition and inferred inputs, respectively. In `band-torch`, the user can easily switch between priors using the `ic_prior` and `co_prior` config arguments or create custom prior modules by implementing `make_posterior` and `forward` functions. This gives users the freedom to experiment with alternative priors that may be more appropriate for certain brain areas and tasks.
+
+# References
+1. David Sussillo, Rafal Jozefowicz, LF Abbott, and Chethan Pandarinath. LFADS – Latent Factor Analysis via Dynamical Systems. arXiv preprint arXiv:1608.06315, 2016.
+1. Chethan Pandarinath, Daniel J O’Shea, Jasmine Collins, Rafal Jozefowicz, Sergey D Stavisky, Jonathan C Kao, Eric M Trautmann, Matthew T Kaufman, Stephen I Ryu, Leigh R Hochberg, et al. Inferring single-trial neural population dynamics using sequential auto-encoders. Nature Methods, 15(10):805–815, 2018.
+1. Mohammad Reza Keshtkaran and Chethan Pandarinath. Enabling hyperparameter optimization in sequential autoencoders for spiking neural data. Advances in Neural Information Processing Systems, 32, 2019.
+1. Mohammad Reza Keshtkaran*, Andrew R Sedler*, Raeed H Chowdhury, Raghav Tandon, Diya Basrai, Sarah L Nguyen, Hansem Sohn, Mehrdad Jazayeri, Lee E Miller, and Chethan Pandarinath. A large-scale neural network training framework for generalized estimation of single-trial population dynamics. Nature Methods, 19(12), 2022.
+1. Lahiru N Wimalasena, Jonas F Braun, Mohammad Reza Keshtkaran, David Hofmann, Juan  ́Alvaro Gallego, Cristiano Alessandro, Matthew C Tresch, Lee E Miller, and Chethan Pandarinath. Estimating muscle activation from emg using deep learning-based dynamical systems models. Journal of Neural Engineering, 19(3):036013, 2022.
+1. Feng Zhu*, Andrew R Sedler*, Harrison A Grier, Nauman Ahad, Mark Davenport, Matthew Kaufman, Andrea Giovannucci, and Chethan Pandarinath. Deep inference of latent dynamics with spatio-temporal super-resolution using selective backpropagation through time. Advances in Neural Information Processing Systems, 34:2331–2345, 2021.
+1. Feng Zhu, Harrison A Grier, Raghav Tandon, Changjia Cai, Anjali Agarwal, Andrea Giovannucci, Matthew T Kaufman, and Chethan Pandarinath. A deep learning framework for inference of single-trial neural population activity from calcium imaging with sub-frame temporal resolution. Nature Neuroscience, 19(12), 2022.
+1. Brianna M Karpowicz, Yahia H Ali, Lahiru N Wimalasena, Andrew R Sedler, Mohammad Reza Keshtkaran, Kevin Bodkin, Xuan Ma, Lee E Miller, and Chethan Pandarinath. Stabilizing brain-computer interfaces through alignment of latent dynamics. bioRxiv, 2022.
+1. Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, et al. Pytorch: An imperative style, high-performance deep learning library. Advances in Neural Information Processing Systems, 32, 2019.
+1. William Falcon and The PyTorch Lightning team. PyTorch Lightning, 3 2019. URL `https://github.com/Lightning-AI/lightning`.
+1. Omry Yadan. Hydra - A framework for elegantly configuring complex applications. Github, 2019. URL `https://github.com/facebookresearch/hydra`.
+1. Richard Liaw, Eric Liang, Robert Nishihara, Philipp Moritz, Joseph E Gonzalez, and Ion Stoica. Tune: A research platform for distributed model selection and training. arXiv preprint arXiv:1807.05118, 2018.

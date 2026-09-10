@@ -32,6 +32,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+results/
 
 # DPAD-related
 .p.*
@@ -167,3 +168,4 @@ notebooks/COSYNE/
 notebooks/pre/PyalData/
 
 wandb/
+data/000127/sub-Han/sub-Han_desc-train_behavior+ecephys.nwb

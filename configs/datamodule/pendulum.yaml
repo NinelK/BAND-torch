@@ -1,0 +1,10 @@
+_target_: lfads_torch.band_datamodules.BasicDataModule
+datafile_pattern: ${relpath:datasets/data_Synthetic_SimplePendulum_OffManifold_Perturbation.h5}
+fold: !!null
+batch_keys:
+  - behavior
+attr_keys:
+  - train_epoch
+  - valid_epoch
+batch_size: 80
+sv_seed: 0
