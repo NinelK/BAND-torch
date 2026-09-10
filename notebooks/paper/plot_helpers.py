@@ -238,8 +238,8 @@ def plot_beh_pred_per_epoch(
         ax[0].spines["top"].set_visible(False)
         ax[0].spines["right"].set_visible(False)
         ax[0].set_yticks([])
-        ax[0].set_xlabel("Time, s")
-        ax[0].set_ylabel(f"Velocity {'X' if component == 0 else 'Y'}")
+        ax[0].set_xlabel("time, s")
+        ax[0].set_ylabel(f"velocity {'X' if component == 0 else 'Y'}")
 
     R2s = []
     for e in range(3):
@@ -300,8 +300,8 @@ def plot_fourier_AD(axes, vel, epoch, experiments, dt=0.01):
                 label=spike_data_dir.split("_")[3].split(".mat")[0][5:],
             )
 
-        ax.set_xlabel("Frequency, Hz")
-        ax.set_ylabel("FFT Amplitude, cm/s")
+        ax.set_xlabel("frequency, Hz")
+        ax.set_ylabel("FFT amplitude, cm/s")
         ax.set_title(f"Monkey {m}")
         ax.set_ylim([0, 2.5])
         ax.set_xlim([0, 10])
@@ -322,8 +322,10 @@ def plot_fourier_last_sessions(
     peak_freq=5,
     color=None,
     vmax=500,
+    session_label=None,
 ):
     session = spike_data_dir.split("_")[3].split(".mat")[0][5:]
+    session_label = session if None else session_label
     epoch_args = {"fontsize": 12, "ha": "center"}
 
     # trial types are ordered in df
@@ -374,7 +376,7 @@ def plot_fourier_last_sessions(
         )
         ax.set_yticks(np.arange(0, len(faxis[mask]), 2))
         ax.set_yticklabels([f"{s:.2}" for s in faxis[mask][::2]])
-        ax.set_ylabel("freq, Hz")
+        ax.set_ylabel("frequency, Hz")
         # add arrow at peak frequency
         arrow_len, arrow_head = AD_start / 3, AD_start / 10
         ax.arrow(
@@ -404,15 +406,15 @@ def plot_fourier_last_sessions(
                 c=color,
                 label="smoothed",
             )
-            ax.set_ylabel(f"FFT Amplitude ({peak_freq} Hz)")
+            ax.set_ylabel(f"FFT amplitude, {peak_freq} Hz")
             epoch_args["color"] = "k"
             epoch_args["va"] = "top"
             epoch_y = ax.get_ylim()[1] * 0.95
 
         return trials, SR[..., find_osc].mean(0)
 
-    ax.set_xlabel("trials, #")
-    ax.set_title(f"Monkey {monkey} (session {session})")
+    ax.set_xlabel("trial #")
+    ax.set_title(f"Monkey {monkey} (session {session_label})")
     ax.axvline(AD_start, c="k")
     ax.axvline(WO_start, c="k")
     ax.text(AD_start / 2, epoch_y, "BL", **epoch_args)
@@ -470,8 +472,8 @@ def plot_fourier_with_cos_sim(
         color=c,
     )
 
-    ax.set_xlabel("Frequency [Hz]")
-    ax.set_ylabel(r"FFT Amplitude [cm/s]")
+    ax.set_xlabel("frequency, Hz")
+    ax.set_ylabel(r"FFT amplitude, cm/s")
     ax.set_ylim([0, 150])
     ax.set_xlim([0, 10])
     ax.spines["top"].set_visible(False)
@@ -496,7 +498,7 @@ def plot_fourier_with_cos_sim(
             alpha=0.3,
             color=c,
         )
-        ax_p.set_xlabel("Frequency [Hz]")
+        ax_p.set_xlabel("frequency, Hz")
         ax_p.set_ylabel(r"FFT phase similarity")
         ax_p.set_ylim([-0.2, 1])
         ax_p.set_xlim([0, 10])
