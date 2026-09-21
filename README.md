@@ -38,6 +38,31 @@ The notebooks producing paper figures can be found in:
 `/notebooks/paper/`
 The names correspond to the figures in the manuscript.
 
+## Downloading the Dataset
+The preprocessed neural and behavioral data is hosted as a GitHub Release in this repository.
+
+### Option 1: Command Line (Recommended)
+You can download and extract the dataset directly into your project directory using wget and unzip:
+```
+# Download the dataset from the release assets
+wget https://github.com/NinelK/BAND-torch/releases/download/dataset/CM.zip
+
+# Extract the contents
+unzip CM.zip -d datasets/
+
+# Optional: Remove the zip file to save space
+rm CM.zip
+```
+
+### Option 2: Manual Download
+
+1. Navigate to the Releases page of this repository.
+2. Find the release tagged dataset (Force field sessions).
+3. Under the Assets section at the bottom of the release notes, click on CM.zip to download it.
+4. Extract the downloaded .zip file into your local workspace.
+
+For details on the file naming convention and how to load the .h5 files in Python, see the [release notes](https://github.com/NinelK/BAND-torch/releases/tag/dataset).
+
 # Notes on fixing problems
 
 To fix `/lib64/libstdc++.so.6: version `CXXABI_1.3.9'` error, add path to this library in your env, e.g.:
