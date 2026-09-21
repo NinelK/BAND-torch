@@ -1,15 +1,11 @@
 # `BAND-torch`: Behavior-aligned neural dynamics model
 
+BAND is a latent dynamics model weakly supervised with behavior. Using a well-established latent dynamics model (LFADS) as a baseline, we constructed an architecture that not only explains neural variability but also aligns the latent space with behavioral output (see the BAND schema for the new additions in green).
+
+While standard LFADS can infer inputs through its controller RNN, it typically only captures inputs that cause a significant change in future dynamics and directly affect neural reconstruction. To ensure that behavior-related inputs are reliably captured, even if they cause only small, transient changes in neural dynamics, BAND incorporates an additional behavior decoder (linear or seq2seq).
+
 The code in this repository extends [`lfads-torch`](https://github.com/arsedler9/lfads-torch) by Sedler et. al: A modular and extensible implementation of latent factor analysis via dynamical systems
 [![arXiv](https://img.shields.io/badge/arXiv-2309.01230-b31b1b.svg)](https://arxiv.org/abs/2309.01230)
-
-BAND is a latent dynamics model weakly supervised with behavior.
-Using a well-established latent dynamics model (LFADS) as a baseline, we constructed a model that not only explains neural variability but also aligns the latent space with the behavioral output ([BAND schema](BAND_schema.pdf), green is new).
-While LFADS is capable of inferring inputs through the controller RNN, this is only the case when these inputs cause
-a significant change in future dynamics and affect the neural reconstruction.
-To ensure that behavior-related inputs can be captured even if they cause a small, transient change in neural dynamics, we utilize an additional behavior decoder (Fig.~\ref{fig:fig1}b, green).
-
-Latent factor analysis via dynamical systems (LFADS) is a variational sequential autoencoder that achieves state-of-the-art performance in denoising high-dimensional neural spiking activity for downstream applications in science and engineering [1, 2, 3, 4]. Recently introduced variants have continued to demonstrate the applicability of the architecture to a wide variety of problems in neuroscience [5, 6, 7, 8]. Since the development of the original implementation of LFADS, new technologies have emerged that use dynamic computation graphs [9], minimize boilerplate code [10], compose model configuration files [11], and simplify large-scale training [12]. Building on these modern Python libraries, we introduce `band-torch` &mdash; a new open-source implementation of LFADS designed to be easier to understand, configure, and extend.
 
 # Installation
 To create an environment and install the dependencies of the project, run the following commands:
