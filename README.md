@@ -22,16 +22,6 @@ pip install -e .
 pre-commit install
 ```
 
-# Run synthetic examples
-1. Generate spike data from a system with a latent Lorenz attractor:
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10`
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0`
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10`
-2. Run CSAE and BAND:
-`sh ./scripts/tune_synthetic_datasets.sh`
-3. Analyse the results:
-`./notebooks/post/compare_pairs.ipynb`
-
 # Reproducing paper figures
 
 The notebooks producing paper figures can be found in:
@@ -62,6 +52,16 @@ rm CM.zip
 4. Extract the downloaded .zip file into your local workspace.
 
 For details on the file naming convention and how to load the .h5 files in Python, see the [release notes](https://github.com/NinelK/BAND-torch/releases/tag/dataset).
+
+# Run synthetic examples
+1. Generate spike data from a system with a latent Lorenz attractor:
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0`
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10`
+2. Run CSAE and BAND:
+`sh ./scripts/tune_synthetic_datasets.sh`
+3. Analyse the results:
+`./notebooks/post/compare_pairs.ipynb`
 
 # Notes on fixing problems
 
