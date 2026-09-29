@@ -51,11 +51,16 @@ For details on the file naming convention and how to load the .h5 files in Pytho
 
 # Run synthetic examples
 1. Generate spike data from a system with a latent Lorenz attractor:
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10`
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0`
-`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10`
+
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=-10 --off_manifold_kick_magnitude=5.`
+
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=0 --off_manifold_kick_magnitude=5.`
+
+`python ./scripts/lorenz/generate_lorenz.py --delay_bins=10 --off_manifold_kick_magnitude=5.`
+
 2. Run CSAE and BAND:
 `sh ./scripts/tune_synthetic_datasets.sh`
+
 3. Analyse the results:
 `./notebooks/post/compare_pairs.ipynb`
 
