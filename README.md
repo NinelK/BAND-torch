@@ -62,7 +62,37 @@ For details on the file naming convention and how to load the .h5 files in Pytho
 `sh ./scripts/tune_synthetic_datasets.sh`
 
 3. Analyse the results:
-`./notebooks/post/compare_pairs.ipynb`
+
+# Mapping notebooks to figures
+
+## Main text figures
+1. Vector neural code schematics, no code
+2. `notebooks/paper/Fig2_vel_oscillations.ipynb`
+3. `notebooks/paper/Fig3_decoding.ipynb`
+4. Vector model schematics, no code
+5. `notebooks/paper/Fig5_supervision.ipynb`
+6. `notebooks/paper/Fig6_small_controlled_variability.ipynb`
+7. `notebooks/paper/Fig7_lags.ipynb`
+
+## Supplemental figures
+1. `notebooks/paper/SFig1_to_6_decoding_across_animals.ipynb`
+2. `notebooks/paper/SFig1_to_6_decoding_across_animals.ipynb`
+3. `notebooks/paper/SFig1_to_6_decoding_across_animals.ipynb`
+4. `notebooks/rnn_decoder/RNN_decoder.ipynb`
+5. `notebooks/paper/SFig1_to_6_decoding_across_animals.ipynb`
+6. `notebooks/paper/SFig1_to_6_decoding_across_animals.ipynb`
+7. `notebooks/paper/SFig7_no_control.ipynb`
+8. `notebooks/paper/Fig6_small_controlled_variability.ipynb`
+9. `notebooks/paper/SFig9_across_animals.ipynb`
+10. `notebooks/paper/Fig5_supervision.ipynb`
+11. `notebooks/paper/Fig6_small_controlled_variability.ipynb`
+12. `notebooks/paper/Fig7_lags.ipynb`
+13. `notebooks/paper/SFig13_residuals.ipynb`
+14. `notebooks/paper/Fig3_decoding.ipynb`
+15. `notebooks/paper/SFig15_to_16_synthetic_data_lorenz.ipynb`
+16. `notebooks/paper/SFig15_to_16_synthetic_data_lorenz.ipynb`
+17. Adapted from the official challange leaderboard: https://neurallatents.github.io/; https://eval.ai/web/challenges/challenge-page/1256/
+18. Vector model schematics, no code
 
 # Notes on fixing problems
 
