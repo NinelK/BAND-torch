@@ -227,9 +227,10 @@ def plot_beh_pred_per_epoch(
                 ax_vel[epochs[t]][d].plot(
                     time,
                     v[t, :, component],
-                    color=f"C{d}",
+                    color=f"C{d}" if ls == "solid" else "k",
                     alpha=1,
-                    ls=ls,
+                    ls='solid',
+                    linewidth=0.5
                 )
 
     for ax in ax_vel:
@@ -323,6 +324,7 @@ def plot_fourier_last_sessions(
     color=None,
     vmax=500,
     session_label=None,
+    colorbar_show=None,
 ):
     session = spike_data_dir.split("_")[3].split(".mat")[0][5:]
     session_label = session if None else session_label
@@ -371,9 +373,10 @@ def plot_fourier_last_sessions(
         im = ax.imshow(
             SR.mean(0).T[mask], aspect="auto", cmap="plasma", vmin=0, vmax=vmax
         )
-        plt.colorbar(
-            im, ax=ax, extend="max", label="FFT amplitude", location="bottom", pad=0.25
-        )
+        if colorbar_show is not None:
+            plt.colorbar(
+                im, cax=colorbar_show, extend="max", label="FFT amplitude", location="right"
+            )
         ax.set_yticks(np.arange(0, len(faxis[mask]), 2))
         ax.set_yticklabels([f"{s:.2}" for s in faxis[mask][::2]])
         ax.set_ylabel("frequency, Hz")
